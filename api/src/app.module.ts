@@ -7,9 +7,10 @@ import { LoansModule } from './loans/loans.module';
 import { PaymentsModule } from './payments/payments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AuditModule } from './audit/audit.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, LoansModule, PaymentsModule, NotificationsModule, AuditModule],
+  imports: [AuthModule, UsersModule, LoansModule, PaymentsModule, NotificationsModule, AuditModule, PrismaModule],
   controllers: [AppController],
   providers: [AppService],
 })

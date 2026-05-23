@@ -1,13 +1,116 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js",
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  BORROWER
+  LOAN_OFFICER
+  ACCOUNTANT
+  COMPLIANCE_OFFICER
+  SUPER_ADMIN
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum LoanStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  DISBURSED
+  CLOSED
+  DEFAULTED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  address      String
+  occupation   String
+  phone        String    @unique
+  email        String?   @unique
+  passwordHash String    @map("password_hash")
+  role         Role      @default(BORROWER)
+  kycStatus    KycStatus @default(PENDING) @map("kyc_status")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")  // soft delete
+
+  loans        Loan[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Loan {
+  id            String     @id @default(uuid())
+  userId        String     @map("user_id")
+  amount        Decimal    @db.Decimal(15, 2)
+  purpose       String
+  status        LoanStatus @default(PENDING)
+  interestRate  Decimal    @map("interest_rate") @db.Decimal(5, 2)
+  termMonths    Int        @map("term_months")
+  version       Int        @default(0)  // optimistic locking
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  deletedAt     DateTime?  @map("deleted_at")
+
+  user          User       @relation(fields: [userId], references: [id])
+  repayments    RepaymentSchedule[]
+  transactions  Transaction[]
+
+  @@map("loans")
+}
+
+model RepaymentSchedule {
+  id           String    @id @default(uuid())
+  loanId       String    @map("loan_id")
+  dueDate      DateTime  @map("due_date")
+  amountDue    Decimal   @map("amount_due") @db.Decimal(15, 2)
+  amountPaid   Decimal   @default(0) @map("amount_paid") @db.Decimal(15, 2)
+  penalty      Decimal   @default(0) @db.Decimal(15, 2)
+  status       String    @default("PENDING")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  loan         Loan      @relation(fields: [loanId], references: [id])
+
+  @@map("repayment_schedules")
+}
+
+model Transaction {
+  id           String   @id @default(uuid())
+  loanId       String   @map("loan_id")
+  type         String   // DISBURSEMENT | REPAYMENT | PENALTY
+  amount       Decimal  @db.Decimal(15, 2)
+  reference    String   @unique  // your internal ref
+  providerRef  String?  @map("provider_ref")  // mobile money ref
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  loan         Loan     @relation(fields: [loanId], references: [id])
+
+  @@map("transactions")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorId     String   @map("actor_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  beforeState Json?    @map("before_state")
+  afterState  Json?    @map("after_state")
+  ipAddress   String?  @map("ip_address")
+  timestamp   DateTime @default(now())
+
+  actor       User     @relation(fields: [actorId], references: [id])
+
+  @@map("audit_logs")
 }
