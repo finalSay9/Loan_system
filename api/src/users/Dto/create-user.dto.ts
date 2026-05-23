@@ -1,12 +1,14 @@
 import { Transform } from 'class-transformer';
 import { 
   IsEmail, 
+  IsEnum, 
   IsNotEmpty, 
   IsOptional, 
   IsString, 
   Matches, 
   MinLength 
 } from 'class-validator';
+import { Role } from 'src/generated/prisma';
 
 
 export class CreateUserDto {
@@ -34,6 +36,7 @@ export class CreateUserDto {
   phone!: string;
 
   @IsEmail({}, { message: 'Invalid email address' })
+  @IsOptional()
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
@@ -43,4 +46,8 @@ export class CreateUserDto {
   @IsNotEmpty()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   password!: string;
+
+  @IsEnum(Role)
+  @IsOptional()
+  role?: Role = Role.BORROWER;
 }
