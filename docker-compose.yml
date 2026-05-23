@@ -21,7 +21,7 @@ services:
     container_name: loan_redis
     restart: always
     ports:
-      - "6379:6379"
+      - "6378:6379"
     networks:
       - loan_network
 
