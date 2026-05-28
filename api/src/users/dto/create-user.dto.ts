@@ -8,7 +8,8 @@ import {
   Matches, 
   MinLength 
 } from 'class-validator';
-import { Role } from '../../../prisma/generated/prisma'
+import { Role } from '../../../prisma/generated/prisma';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 
 export class CreateUserDto {
