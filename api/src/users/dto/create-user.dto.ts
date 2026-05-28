@@ -13,6 +13,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 
 export class CreateUserDto {
+  @ApiProperty({ example: 'John Banda', description: 'Full name of the user' })
   @IsString()
   @IsNotEmpty()
   @MinLength(2, { message: 'name must be at least 2 characters' })
