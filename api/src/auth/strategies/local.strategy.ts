@@ -8,6 +8,7 @@ import { AuthService } from '../auth.service';
 @Injectable()
 export class LocalStretegy extends PassportStrategy(Strategy) {
     constructor(private authService: AuthService) {
+  //telling the passport strategy to accepting the phone number instead of email
         super({usernameField: 'phone'})
     }
 
