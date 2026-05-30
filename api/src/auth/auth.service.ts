@@ -19,7 +19,7 @@ export class AuthService {
         }
         //check password
         const checkPassword = await bcrypt.compare(dto.password, user.passwordHash)
-
+        //if long credentials provided
         if(!checkPassword) {
             throw new UnauthorizedException('invalid credentials')
         }

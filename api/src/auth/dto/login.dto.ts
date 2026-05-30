@@ -1,22 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
-
+import { IsNotEmpty, IsString, Matches } from 'class-validator';
 
 export class LoginDto {
+  @ApiProperty({ example: '+265991234567' })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\+?[1-9]\d{1,14}$/, {
+    message: 'Phone must be a valid E.164 international format',
+  })
+  phone!: string;
 
-    @ApiProperty({
-        example: '+265991234567',
-        description: 'Phone in E.164 format',
-      })
-    @IsString()
-    phone: string
-
-
-     @ApiProperty({
-        example: 'Secret@123',
-        description:
-          'Min 8 chars, must include upper, lower, number and special character',
-      })
-    @IsString()
-    password: string
+  @ApiProperty({ example: 'Secret@123' })
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
 }
