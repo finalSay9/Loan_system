@@ -3,6 +3,11 @@ import { IsString } from 'class-validator';
 
 
 export class LoginDto {
+
+    @ApiProperty({
+        example: '+265991234567',
+        description: 'Phone in E.164 format',
+      })
     @IsString()
     phone: string
 
