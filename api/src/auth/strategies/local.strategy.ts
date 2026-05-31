@@ -13,8 +13,8 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
         super({usernameField: 'phone'})
     }
 
-    async validate(dto: LoginDto) {
-        const user = await this.authService.validateUser(dto)
+    async validate(phone: string, password: string) {
+        const user = await this.authService.validateUser(phone, password)
         
         if(!user) {
             throw new UnauthorizedException('invalid phone or password')
