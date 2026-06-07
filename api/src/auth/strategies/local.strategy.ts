@@ -9,7 +9,8 @@ import { LoginDto } from '../dto/login.dto';
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
     constructor(private authService: AuthService) {
-  //telling the passport strategy to accepting the phone number instead of email
+  //telling the passport strategy to accepting the phone number as username
+  //  instead of email
         super({usernameField: 'phone'})
     }
 
