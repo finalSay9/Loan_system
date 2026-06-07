@@ -1,9 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { LocalGuard } from './guards/local.guard';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { LocalStrategy } from './strategies/local.strategy';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 
