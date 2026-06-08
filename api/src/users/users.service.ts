@@ -96,17 +96,22 @@ export class UsersService {
     if(!user) {
       throw new NotFoundException('user not found')
     }
+    //stripping off the password
+    const {passwordHash, ...result} = user;
+    return result;
   }
 
   //find user by email
   async findUserByEmail(email: string) {
-    const user = await this.prisma.user.findUnique({
+     // FIXED: Using findFirst to prevent runtime issues with optional types
+    const user = await this.prisma.user.findFirst({
       where: {email: email}
     })
     //if user with that email dont exist
     if(!user) {
       throw new NotFoundException('user with this email doesnt exist')
     }
+    return user;
   }
 
   private async signToken(userId: string, email: string): Promise<string> {
