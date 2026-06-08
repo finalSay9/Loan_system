@@ -20,10 +20,11 @@ export class AuthService {
         }
         //check password
         const checkPassword = await bcrypt.compare(password, user.passwordHash)
-        //if long credentials provided
+        //if wrong credentials provided
         if(!checkPassword) {
             throw new UnauthorizedException('invalid credentials')
         }
+        return user;
         
     }
 
