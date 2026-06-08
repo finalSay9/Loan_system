@@ -30,9 +30,10 @@ export class AuthService {
     return result;
   }
 
-  // 2. Called by AuthController after successful LocalStrategy validation
+  //  Called by AuthController after successful LocalStrategy validation
   async login(user: any) {
-    const payload = { phone: user.phone, sub: user.password };
+    // FIXED: Used the user ID for 'sub'.... and NOT passwords in the payload
+    const payload = { phone: user.phone, sub: user.id };
 
     return {
       message: 'login successfull',
