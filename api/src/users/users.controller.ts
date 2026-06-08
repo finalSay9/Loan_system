@@ -7,6 +7,8 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+
+  //creating a user
   @Post('createUser')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
@@ -14,4 +16,9 @@ export class UsersController {
   async createUser(@Body() createUserDto: CreateUserDto) {
     return await this.usersService.createUser(createUserDto);
   }
+
+  @Get('getUser')
+  @ApiOperation({ summary: 'get user by id' })
+  @ApiResponse({ status: 201, description: 'User retrived successfully' })
+  @ApiResponse({ status: 409, description: 'no user with this id exist' })
 }
