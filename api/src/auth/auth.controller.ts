@@ -9,14 +9,16 @@ import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
+  
   constructor(private authService: AuthService) {}
+  
 
   @UseGuards(LocalGuard)
-  @Post()
+  @Post('login')
   @ApiOperation({ summary: 'loggin in' })
   @ApiResponse({ status: 201, description: 'logged in successfully' })
   @ApiResponse({ status: 409, description: 'invalid credentials' })
-  login(@Req() req: Request) {
+  login(@Req() req: any) {
     return this.authService.login(req.user);
   }
 }
