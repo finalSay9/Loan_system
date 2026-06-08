@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -84,6 +84,29 @@ export class UsersService {
       access_token: token,
       data: user,
     };
+  }
+
+  //finding user by id
+  async findUserById(userId: string): Promise<any> {
+    const user = await this.prisma.user.findUnique({
+      where: {id: userId}
+    })
+
+    //if the user is not found
+    if(!user) {
+      throw new NotFoundException('user not found')
+    }
+  }
+
+  //find user by email
+  async findUserByEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {email: email}
+    })
+    //if user with that email dont exist
+    if(!user) {
+      throw new NotFoundException('user with this email doesnt exist')
+    }
   }
 
   private async signToken(userId: string, email: string): Promise<string> {
