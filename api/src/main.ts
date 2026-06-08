@@ -4,11 +4,18 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import helmet from 'helmet';
 import compression from 'compression';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+  const jwtSecret = configService.get<string>('JWT_SECRET');
 
-  // Security
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET is not defined in environment variables');
+  }
+
+  // Security metrics
   app.use(helmet());
   app.use(compression());
 
@@ -24,7 +31,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,            // strips unknown fields automatically
       forbidNonWhitelisted: true, // throws error if unknown fields are sent
-      transform: true,            // auto-converts types (string "1" → number 1)
+      transform: true,            // auto-converts types (string "1" >> number 1)
     }),
   );
 

@@ -16,16 +16,16 @@ export class AuthService {
       where: { phone: phone },
     });
     if (!user) {
-      throw new UnauthorizedException('invalid credentials');
+      return null
     }
     //check password
     const checkPassword = await bcrypt.compare(password, user.passwordHash);
     //if wrong credentials provided
     if (!checkPassword) {
-      throw new UnauthorizedException('invalid credentials');
+      return null;
     }
     // Strip out the password hash so it doesn't get passed around the app
-    const { passwordHash,name, ...result } = user;
+    const { passwordHash, ...result } = user;
 
     return result;
   }
@@ -38,9 +38,16 @@ export class AuthService {
     // FIXED: Used the user ID for 'sub'.... and NOT passwords in the payload
     const payload = { phone: user.phone, sub: user.id };
 
-    return {
-      message: 'login successfull',
-      access_token: this.jwtService.sign(payload),
-    };
+   return {
+     message: 'Login successful',
+     access_token: await this.jwtService.signAsync(payload),
+     data: {
+       id: user.id,
+       name: user.name,
+       phone: user.phone,
+       email: user.email,
+       role: user.role,
+     },
+   };
   }
 }
