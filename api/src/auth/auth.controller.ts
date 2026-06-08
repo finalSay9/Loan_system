@@ -1,20 +1,22 @@
-import { Body, Controller, Post, UseGuards, Request } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { LocalGuard } from './guards/local.guard';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Request } from 'express';
+import { AuthService } from './auth.service';
 
+//login(@Request() req: Request)
 
 @Controller('auth')
 export class AuthController {
+  constructor(private authService: AuthService) {}
 
-    constructor(){}
-
-    @UseGuards(LocalGuard)
-    @Post()
-    @ApiOperation({ summary: 'loggin in' })
-    @ApiResponse({ status: 201, description: 'logged in successfully' })
-    @ApiResponse({ status: 409, description: 'invalid credentials' })
-    login(@Request() req, @Body() dto: LoginDto){
-        return  req.user;
-    }
+  @UseGuards(LocalGuard)
+  @Post()
+  @ApiOperation({ summary: 'loggin in' })
+  @ApiResponse({ status: 201, description: 'logged in successfully' })
+  @ApiResponse({ status: 409, description: 'invalid credentials' })
+  login(@Req() req: Request) {
+    return this.authService.login(req.user);
+  }
 }

@@ -25,10 +25,13 @@ export class AuthService {
       throw new UnauthorizedException('invalid credentials');
     }
     // Strip out the password hash so it doesn't get passed around the app
-    const { passwordHash, ...result } = user;
+    const { passwordHash,name, ...result } = user;
 
     return result;
   }
+
+  //create an interface
+  
 
   //  Called by AuthController after successful LocalStrategy validation
   async login(user: any) {
