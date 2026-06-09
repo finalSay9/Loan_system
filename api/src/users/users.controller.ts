@@ -30,9 +30,9 @@ export class UsersController {
   //find the user by email
   @Get('search')
   @ApiOperation({ summary: 'get user by email' })
-  @ApiResponse({ status: 201, description: 'User retrived successfully' })
+  @ApiResponse({ status: 200, description: 'User retrived successfully' })
   @ApiResponse({ status: 409, description: 'no user with this email exist' })
   async getUserByEmail(@Query('email') email: string) {
-    return await this.usersService.findUserByEmail(email)
+    return this.usersService.findUserByEmail(email)
   }
 }
