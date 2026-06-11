@@ -2,7 +2,7 @@ import { Injectable, ExecutionContext, CanActivate } from '@nestjs/common';
 
 
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class JwtAuthGuard implements CanActivate {
   //implementing the can activate function
   async canActivate(context: ExecutionContext):Promise<boolean> {
     const request = context.switchToHttp().getRequest();
