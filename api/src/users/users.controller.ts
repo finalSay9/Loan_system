@@ -2,7 +2,8 @@ import { Controller, Post, Body, HttpCode, HttpStatus, Get, Param, Query, UseGua
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
-import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+
 
 @Controller('users')
 export class UsersController {
