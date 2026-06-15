@@ -1,5 +1,5 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
@@ -19,11 +19,16 @@ export class UsersController {
     return await this.usersService.createUser(createUserDto);
   }
 
+//   {
+//   "phone": "+265883341542",
+//   "password": "Evan@1234"
+// }
 
   //getting a user by id
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  @ApiOperation({ summary: 'get user by id' })
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get current logged in user' })
   @ApiResponse({ status: 201, description: 'User retrived successfully' })
   @ApiResponse({ status: 409, description: 'no user with this id exist' })
   async getUserById(@Param('id') userId: string) {
@@ -33,7 +38,7 @@ export class UsersController {
   //find the user by email
   @Get('search')
   @ApiOperation({ summary: 'get user by email' })
-  @ApiResponse({ status: 200, description: 'User retrived successfully' })
+  @ApiResponse({ status: 201, description: 'User retrived successfully' })
   @ApiResponse({ status: 409, description: 'no user with this email exist' })
   async getUserByEmail(@Query('email') email: string) {
     return this.usersService.findUserByEmail(email)
