@@ -14,6 +14,8 @@ export  class JwtStrategy extends PassportStrategy(Strategy) {
         super({
             //telling the passport where to look for the token
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            //xhecking the xpiration of the token
+            ignoreExpiration: false,
             //checking if the token is valide/or not fake
             secretOrKey: config.get<string>('JWT_SECRET')
         });
