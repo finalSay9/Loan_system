@@ -9,9 +9,9 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-
   //creating a user
   @Post('createUser')
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email already in use' })
@@ -19,10 +19,19 @@ export class UsersController {
     return await this.usersService.createUser(createUserDto);
   }
 
-//   {
-//   "phone": "+265883341542",
-//   "password": "Evan@1234"
-// }
+  //   {
+  //   "phone": "+265883341542",
+  //   "password": "Evan@1234"
+  // }
+
+  //mr specif route find the user by email
+  @Get('search')
+  @ApiOperation({ summary: 'get user by email' })
+  @ApiResponse({ status: 201, description: 'User retrived successfully' })
+  @ApiResponse({ status: 409, description: 'no user with this email exist' })
+  async getUserByEmail(@Query('email') email: string) {
+    return this.usersService.findUserByEmail(email);
+  }
 
   //getting a user by id
   @UseGuards(JwtAuthGuard)
@@ -32,15 +41,6 @@ export class UsersController {
   @ApiResponse({ status: 201, description: 'User retrived successfully' })
   @ApiResponse({ status: 409, description: 'no user with this id exist' })
   async getUserById(@Param('id') userId: string) {
-    return await this.usersService.findUserById(userId)
-  }
-
-  //find the user by email
-  @Get('search')
-  @ApiOperation({ summary: 'get user by email' })
-  @ApiResponse({ status: 201, description: 'User retrived successfully' })
-  @ApiResponse({ status: 409, description: 'no user with this email exist' })
-  async getUserByEmail(@Query('email') email: string) {
-    return this.usersService.findUserByEmail(email)
+    return await this.usersService.findUserById(userId);
   }
 }

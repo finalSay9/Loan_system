@@ -111,7 +111,10 @@ export class UsersService {
     if(!user) {
       throw new NotFoundException('user with this email doesnt exist')
     }
-    return user;
+
+    //striping the password
+    const {passwordHash, ...result} = user;
+    return result;
   }
 
   private async signToken(userId: string, email: string): Promise<string> {
