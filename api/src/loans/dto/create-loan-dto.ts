@@ -25,7 +25,7 @@ export class CreateLoanDto {
   @Type(() => Number)
   @IsInt()
   @Min(1, { message: 'Minimum term is 1 month' })
-  @Max(60, { message: 'Maximum term is 60 months' })
+  @Max(12, { message: 'Maximum term is 12 months' })
   termMonths!: number;
 
   @ApiProperty({ example: 'Business capital for my shop' })

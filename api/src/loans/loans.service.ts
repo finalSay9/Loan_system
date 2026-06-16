@@ -7,4 +7,9 @@ export class LoansService {
     constructor(
         private prisma: PrismaService
     ){}
+
+    //applying for the loan 
+    async applyForLoan() {
+        
+    }
 }
