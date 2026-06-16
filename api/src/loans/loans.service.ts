@@ -10,10 +10,16 @@ export class LoansService {
     ){}
 
     //applying for the loan 
-    async applyForLoan(createLoan: CreateLoanDto) {
+    async applyForLoan(createLoan: CreateLoanDto, userId: string) {
         const loan = await this.prisma.loan.create({
-            
-        })
+          data: {
+            amount: createLoan.amount,
+            purpose: createLoan.purpose,
+            termMonths: createLoan.termMonths,
+            interestRate: 10.5,
+            userId,
+          },
+        });
 
     }
 }

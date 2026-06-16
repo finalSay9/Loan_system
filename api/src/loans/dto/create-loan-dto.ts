@@ -33,8 +33,8 @@ export class CreateLoanDto {
   @IsNotEmpty()
   purpose!: string;
 
-  @ApiPropertyOptional({ example: 'Additional context about the loan' })
-  @IsString()
-  @IsOptional()
-  notes?: string;
+  // @ApiPropertyOptional({ example: 'Additional context about the loan' })
+  // @IsString()
+  // @IsOptional()
+  // notes?: string;
 }
