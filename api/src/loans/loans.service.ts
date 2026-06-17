@@ -20,6 +20,7 @@ export class LoansService {
             userId,
           },
         });
+        return loan
 
     }
 }
