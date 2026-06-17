@@ -17,13 +17,13 @@ export class LoansController {
 
     constructor(private loanService: LoansService){}
 
-    @Post()
+    @Post('applying')
     @HttpCode(HttpStatus.CREATED)
     @ApiOperation({ summary: 'Register a new user' })
     @ApiResponse({ status: 201, description: 'User registered successfully' })
     @ApiResponse({ status: 409, description: 'Email already in use' })
-    async createLoan(@Body() loanDto: CreateLoanDto, userId: string) {
-        return await this.loanService.applyForLoan(loanDto, userId)
+    async createLoan(@Param('id')userId: string, @Body() loanDto: CreateLoanDto ) {
+        return await this.loanService.applyForLoan(userId, loanDto)
     }
 
 
