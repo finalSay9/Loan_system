@@ -23,4 +23,13 @@ export class LoansService {
         return loan
 
     }
+
+    //get my loans
+    async getMyLoans(loanId: string, userId: string) {
+      //first check if there are loans available
+      const checkAvailableLoans = await this.prisma.loan.findMany({
+        where: {}
+      })
+
+    }
 }

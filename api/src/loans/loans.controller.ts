@@ -27,7 +27,7 @@ export class LoansController {
   @ApiResponse({ status: 409, description: 'Email already in use' })
   async createLoan(
     @Body() loanDto: CreateLoanDto,
-    @GetUser('sub') userId: string,
+    @GetUser('id') userId: string,
   ) {
     return await this.loanService.applyForLoan(loanDto, userId);
   }
