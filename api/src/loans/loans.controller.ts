@@ -14,6 +14,7 @@ import { CreateLoanDto } from './dto/create-loan-dto';
 import { GetUser } from 'src/auth/decorators/getUser.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { userInfo } from 'os';
+import { LoanQueryDto } from './dto/loan-query.dto';
 
 @Controller('loans')
 export class LoansController {
@@ -43,8 +44,8 @@ export class LoansController {
   @ApiOperation({ summary: 'getting loans' })
   @ApiResponse({ status: 200, description: 'loans retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loans available' })
-  async getAllLoans(@GetUser('id') userId: string){
-    return await this.loanService.getMyLoans(userId)
+  async getAllLoans(@GetUser('id') userId: string, loanQuery: LoanQueryDto){
+    return await this.loanService.getMyLoans(userId, loanQuery)
   }
 
   //getting a loan by id

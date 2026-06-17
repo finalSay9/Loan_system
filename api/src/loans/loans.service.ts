@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateLoanDto } from './dto/create-loan-dto';
 import { NotFoundError } from 'rxjs';
+import { LoanQueryDto } from './dto/loan-query.dto';
 
 @Injectable()
 export class LoansService {
@@ -26,7 +27,7 @@ export class LoansService {
     }
 
     //get my loans
-    async getMyLoans(userId: string) {
+    async getMyLoans(userId: string, queryDto: LoanQueryDto) {
       //looking for thr loans of the uyser
       const userLoans = await this.prisma.loan.findMany({
         where: {userId: userId}
