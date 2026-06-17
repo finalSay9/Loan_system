@@ -48,5 +48,11 @@ export class LoansController {
   }
 
   //getting a loan by id
-  //async getLoanById()
+  @UseGuards(JwtAuthGuard)
+  @Get('getting')
+  @ApiBearerAuth('access-token') 
+  @ApiOperation({ summary: 'getting loans' })
+  @ApiResponse({ status: 200, description: 'loans retrived successfully' })
+  @ApiResponse({ status: 409, description: 'no loans available' })
+  async getLoanById(@Param('property', pipes))
 }
