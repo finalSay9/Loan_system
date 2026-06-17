@@ -17,7 +17,7 @@ export class LoansService {
             purpose: createLoan.purpose,
             termMonths: createLoan.termMonths,
             interestRate: 10.5,
-            userId,
+            userId: userId,
           },
         });
         return loan
