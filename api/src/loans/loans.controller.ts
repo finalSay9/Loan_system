@@ -49,12 +49,12 @@ export class LoansController {
 
   //getting a loan by id
   @UseGuards(JwtAuthGuard)
-  @Get('id')
+  @Get(':id')
   @ApiBearerAuth('access-token') 
   @ApiOperation({ summary: 'getting a loan by id' })
   @ApiResponse({ status: 200, description: 'loan retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loan with that id available' })
-  async getLoanById(@Param('id') loanId: string){
-    return await this.loanService.getLoanById(loanId)
+  async getLoanById(@Param('id') loanId: string, @GetUser('id') userId: string){
+    return await this.loanService.getLoanById(loanId, userId)
   }
 }

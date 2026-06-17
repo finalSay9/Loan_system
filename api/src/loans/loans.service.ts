@@ -40,10 +40,13 @@ export class LoansService {
     }
 
     //getting a loan by id
-  async getLoanById(loanId: string){
+  async getLoanById(loanId: string, userId: string){
     //check if a loan by that id is available
     const userLoan = await this.prisma.loan.findUnique({
-      where:{id: loanId}
+      where:{
+        id: loanId,
+        userId: userId
+      }
     })
 
     //if the loan is not available
