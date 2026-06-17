@@ -36,8 +36,11 @@ export class LoansService {
       if(userLoans.length ===0) {
         throw new NotFoundException('no available loans at the moment')
       }
-
       return userLoans
-
     }
+
+    //getting a loan by id
+  async getLaonById(loanId: string, userId: string){
+    
+  }
 }
