@@ -404,8 +404,8 @@ POST /auth/login
 Content-Type: application/json
 
 {
-  "email": "john@example.com",
-  "password": "password123"
+  "email": "evan@chimwaza.com",
+  "password": "underworld"
 }
 ```
 
