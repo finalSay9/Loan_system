@@ -15,6 +15,8 @@ import { GetUser } from 'src/auth/decorators/getUser.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { userInfo } from 'os';
 import { LoanQueryDto } from './dto/loan-query.dto';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Role } from 'prisma/generated/prisma';
 
 @Controller('loans')
 export class LoansController {
@@ -61,7 +63,8 @@ export class LoansController {
 
 
   //an officer getting all applied loans
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Role(Role.SUPER_ADMIN, Role.LOAN_OFFICER)
   @Get('all-loans')
   @ApiBearerAuth('access-token') 
   @ApiOperation({ summary: 'getting loans' })
