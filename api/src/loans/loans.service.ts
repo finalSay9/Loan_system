@@ -56,7 +56,13 @@ export class LoansService {
     }
 
     return userLoan;
-    
-    
+  }
+
+  //getting all loans applied by users for admins only
+  async getAllLoans(officerId: string, queryDto: LoanQueryDto) {
+    //looking up in the database
+    const allAppliedLoans = await this.prisma.loan.findMany({
+      where:{userId: officerId}
+    })
   }
 }
