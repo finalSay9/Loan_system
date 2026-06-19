@@ -5,9 +5,13 @@
 ![Prisma](https://img.shields.io/badge/Prisma-ORM-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
 ![Redis](https://img.shields.io/badge/Redis-7-red)
+
+![FastAPI](https://img.shields.io/badge/FastAPI-Risk%20Engine-009688)
+![Django](https://img.shields.io/badge/Django-Admin%20Portal-092E20)
+
 ![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)
 
-A production-oriented loan management platform built with **NestJS**, **Prisma**, **PostgreSQL**, and **Redis**.
+A production-oriented loan management platform built with **NestJS**, **Django**, **FastAPI**,  **Prisma**, **PostgreSQL**, and **Redis**.
 
 The system is designed as a **modular monolith** with a clear migration path toward **domain-based microservices** as system demand and complexity increase.
 
