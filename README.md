@@ -1,72 +1,143 @@
 # Loan Management System
 
-A modular monolith loan management platform built with NestJS, Prisma, and PostgreSQL. Designed to scale from a single deployable API into domain-based microservices as load grows.
+![NestJS](https://img.shields.io/badge/NestJS-11-red)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![Prisma](https://img.shields.io/badge/Prisma-ORM-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
+![Redis](https://img.shields.io/badge/Redis-7-red)
+![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)
 
-## Tech stack
+A production-oriented loan management platform built with **NestJS**, **Prisma**, **PostgreSQL**, and **Redis**.
 
-- **API**: NestJS (TypeScript)
-- **ORM**: Prisma
-- **Database**: PostgreSQL 15
-- **Cache / sessions**: Redis 7
-- **Auth**: Passport (JWT + Local strategy)
-- **Docs**: Swagger / OpenAPI
-- **Containerization**: Docker Compose
+The system is designed as a **modular monolith** with a clear migration path toward **domain-based microservices** as system demand and complexity increase.
 
-## Project status
+---
 
-Currently in **Phase 1 — Modular Monolith**. See [Roadmap](#roadmap) for what's next.
+## Features
 
-| Module | Status |
-|---|---|
-| Users |  Registration, profile, admin search |
-| Auth |  Login, JWT guard, role guard |
-| Loans |  In progress |
-| Payments |  Not started |
-| Notifications |  Not started |
-| Audit |  Logging on user creation |
+* JWT Authentication
+* Role-Based Access Control (RBAC)
+* User Management
+* Loan Application Workflow
+* Loan Approval & Disbursement
+* Repayment Scheduling
+* Audit Logging
+* Redis Caching
+* Swagger/OpenAPI Documentation
+* Dockerized Development Environment
+* Microservice-Ready Architecture
 
-## Getting started
+---
+
+## Tech Stack
+
+| Layer            | Technology                      |
+| ---------------- | ------------------------------- |
+| API              | NestJS                          |
+| Language         | TypeScript                      |
+| Database         | PostgreSQL 15                   |
+| ORM              | Prisma                          |
+| Cache            | Redis 7                         |
+| Authentication   | Passport (JWT + Local Strategy) |
+| Documentation    | Swagger/OpenAPI                 |
+| Containerization | Docker Compose                  |
+| Testing          | Jest                            |
+
+---
+
+## Project Status
+
+Current phase: **Phase 1 — Modular Monolith**
+
+| Module        | Status                                 |
+| ------------- | -------------------------------------- |
+| Users         | Registration, profile, admin search    |
+| Auth          | Login, JWT authentication, role guards |
+| Loans         | In Progress                            |
+| Payments      | Planned                                |
+| Notifications | Planned                                |
+| Audit         | User creation logging implemented      |
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Node.js 22+
-- Docker & Docker Compose
-- npm
 
-### Setup
+* Node.js 22+
+* Docker
+* Docker Compose
+* npm
+
+---
+
+### Installation
 
 ```bash
-# Clone and install
-git clone <repo-url>
+# Clone repository
+git clone <repository-url>
+
+# Enter project
 cd api
+
+# Install dependencies
 npm install
+```
 
-# Start Postgres + Redis
+### Start Infrastructure
+
+```bash
 docker compose up -d
+```
 
-# Copy env template and fill in values
+### Configure Environment
+
+```bash
 cp .env.example .env
+```
 
-# Run migrations
+Update values inside `.env`.
+
+### Generate Prisma Client
+
+```bash
 npx prisma generate
-npx prisma migrate dev
+```
 
-# Start the dev server
+### Run Database Migrations
+
+```bash
+npx prisma migrate dev
+```
+
+### Start Development Server
+
+```bash
 npm run start:dev
 ```
 
-API runs at `http://localhost:3200/api/v1`
-Swagger docs at `http://localhost:3200/docs`
+---
 
-### Environment variables
+## Application URLs
+
+| Service      | URL                          |
+| ------------ | ---------------------------- |
+| API          | http://localhost:3200/api/v1 |
+| Swagger Docs | http://localhost:3200/docs   |
+
+---
+
+## Environment Variables
 
 ```env
 PORT=3200
 NODE_ENV=development
 
 DATABASE_URL="postgresql://user:password@localhost:5438/loan_db?schema=public"
+
 REDIS_URL="redis://localhost:6379"
 
-JWT_SECRET=
+JWT_SECRET=your_secret_key
 JWT_EXPIRES_IN=7d
 
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
@@ -74,20 +145,21 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 
 ---
 
-## Architecture overview
+## Architecture Overview
 
 ```mermaid
 flowchart TB
+
     subgraph Clients
         WEB[Next.js Web]
         MOB[Flutter Mobile]
     end
 
     subgraph Gateway
-        GW[NestJS API Gateway<br/>Auth · Rate limiting · Routing]
+        GW[NestJS API Gateway]
     end
 
-    subgraph Core["Core Services - NestJS"]
+    subgraph CoreServices["Core Services"]
         AUTH[Auth]
         USERS[Users]
         LOANS[Loans]
@@ -96,12 +168,12 @@ flowchart TB
         AUDIT[Audit]
     end
 
-    subgraph Backoffice["Phase 2+"]
+    subgraph Backoffice["Future Services"]
         DJANGO[Django Admin]
         FASTAPI[FastAPI Risk Engine]
     end
 
-    subgraph Infra
+    subgraph Infrastructure
         PG[(PostgreSQL)]
         REDIS[(Redis)]
         S3[(MinIO / S3)]
@@ -109,11 +181,14 @@ flowchart TB
 
     WEB --> GW
     MOB --> GW
+
     GW --> AUTH
     GW --> USERS
     GW --> LOANS
     GW --> PAY
+
     LOANS --> NOTIF
+
     AUTH --> AUDIT
     LOANS --> AUDIT
     PAY --> AUDIT
@@ -121,18 +196,48 @@ flowchart TB
     USERS --> PG
     LOANS --> PG
     PAY --> PG
+
     AUTH --> REDIS
+
     DJANGO --> PG
     FASTAPI --> PG
+
     LOANS --> S3
 ```
 
-## Database schema (current)
+---
+
+## Folder Structure
+
+```text
+src/
+├── auth/
+├── users/
+├── loans/
+├── payments/
+├── notifications/
+├── audit/
+├── prisma/
+├── common/
+│   ├── decorators/
+│   ├── guards/
+│   ├── filters/
+│   ├── interceptors/
+│   └── pipes/
+├── app.module.ts
+└── main.ts
+```
+
+---
+
+## Database Schema
 
 ```mermaid
 erDiagram
+
     USERS ||--o{ LOANS : applies_for
     USERS ||--o{ AUDIT_LOGS : performs
+
     LOANS ||--o{ REPAYMENT_SCHEDULES : has
     LOANS ||--o{ TRANSACTIONS : has
 
@@ -193,110 +298,209 @@ erDiagram
     }
 ```
 
-## Loan lifecycle
+---
+
+## Loan Lifecycle
 
 ```mermaid
 stateDiagram-v2
+
     [*] --> PENDING
+
     PENDING --> UNDER_REVIEW
     UNDER_REVIEW --> APPROVED
     UNDER_REVIEW --> REJECTED
+
     APPROVED --> DISBURSED
     DISBURSED --> ACTIVE
+
     ACTIVE --> CLOSED
     ACTIVE --> DEFAULTED
+
     REJECTED --> [*]
     CLOSED --> [*]
     DEFAULTED --> [*]
 
-    note right of PENDING : Borrower applies
-    note right of UNDER_REVIEW : Officer opens application
-    note right of APPROVED : Officer approves
-    note right of REJECTED : Officer rejects
-    note right of DISBURSED : Funds sent to borrower
-    note right of ACTIVE : Repayment schedule generated
-    note right of CLOSED : Fully repaid
-    note right of DEFAULTED : Missed payments threshold
-```
+    note right of PENDING
+        Borrower submits application
+    end note
 
-## Auth flow
+    note right of UNDER_REVIEW
+        Loan officer reviews
+    end note
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant API as NestJS API
-    participant DB as PostgreSQL
+    note right of APPROVED
+        Application approved
+    end note
 
-    C->>API: POST /auth/login
-    API->>DB: findUnique by phone
-    DB->>API: user record
-    API->>API: compare password hash
-    API->>API: sign JWT
-    API->>C: access_token + user data
+    note right of DISBURSED
+        Funds sent to borrower
+    end note
 
-    C->>API: GET /users/profile
-    API->>API: validate JWT payload
-    API->>DB: findUnique by id
-    DB->>API: user record
-    API->>C: user profile
+    note right of ACTIVE
+        Repayment schedule active
+    end note
+
+    note right of CLOSED
+        Loan fully repaid
+    end note
+
+    note right of DEFAULTED
+        Loan delinquent
+    end note
 ```
 
 ---
 
-## API endpoints (current)
+## Authentication Flow
 
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| POST | `/users/register` | Public | Register new user |
-| GET | `/users/profile` | Authenticated | Get own profile |
-| GET | `/users/search?email=` | Admin / Officer | Find user by email |
-| GET | `/users/:id` | Admin / Officer | Get user by ID |
-| POST | `/auth/login` | Public | Login, returns JWT |
-| GET | `/auth/me` | Authenticated | Get current user from token |
+```mermaid
+sequenceDiagram
 
-## Roles
+    participant User
+    participant API
+    participant Database
 
-| Role | Description |
-|---|---|
-| `BORROWER` | Applies for loans, views own data |
-| `LOAN_OFFICER` | Reviews and approves/rejects loans |
-| `ACCOUNTANT` | Read-only access to financial reports |
-| `COMPLIANCE_OFFICER` | Views KYC and audit data |
-| `SUPER_ADMIN` | Full system access |
+    User->>API: POST /auth/login
+    API->>Database: Validate credentials
+    Database-->>API: User record
+
+    API-->>User: JWT Access Token
+
+    User->>API: Request protected resource
+    API->>API: Verify JWT
+
+    API-->>User: Authorized Response
+```
+
+---
+
+## API Endpoints
+
+### Authentication
+
+| Method | Endpoint      | Access        | Description                    |
+| ------ | ------------- | ------------- | ------------------------------ |
+| POST   | `/auth/login` | Public        | Login and receive JWT          |
+| GET    | `/auth/me`    | Authenticated | Get current authenticated user |
+
+### Users
+
+| Method | Endpoint               | Access          | Description          |
+| ------ | ---------------------- | --------------- | -------------------- |
+| POST   | `/users/register`      | Public          | Register user        |
+| GET    | `/users/profile`       | Authenticated   | Get own profile      |
+| GET    | `/users/search?email=` | Admin / Officer | Search user by email |
+| GET    | `/users/:id`           | Admin / Officer | Get user by ID       |
+
+---
+
+## Login Example
+
+### Request
+
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+
+### Response
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+---
+
+## User Roles
+
+| Role               | Description                           |
+| ------------------ | ------------------------------------- |
+| BORROWER           | Applies for loans and views own data  |
+| LOAN_OFFICER       | Reviews and approves/rejects loans    |
+| ACCOUNTANT         | Read-only access to financial reports |
+| COMPLIANCE_OFFICER | Views KYC and audit data              |
+| SUPER_ADMIN        | Full system access                    |
 
 ---
 
 ## Roadmap
 
-### Phase 1 — Modular Monolith (current)
-- [x] User registration + auth
-- [x] JWT + role-based guards
-- [x] Audit logging foundation
-- [ ] Loans module (apply, approve, disburse)
-- [ ] Repayment schedule generation
-- [ ] Payments module + mobile money integration
-- [ ] Notifications (SMS/email)
+### Phase 1 — Modular Monolith (Current)
 
-### Phase 2 — Admin Backoffice
-- [ ] Django admin dashboard
-- [ ] Reporting & reconciliation
-- [ ] KYC/compliance views
+* [x] User Registration
+* [x] JWT Authentication
+* [x] Role-Based Authorization
+* [x] Audit Logging Foundation
+* [ ] Loan Application Workflow
+* [ ] Loan Approval Workflow
+* [ ] Loan Disbursement
+* [ ] Repayment Schedule Generation
+* [ ] Payments Module
+* [ ] Mobile Money Integration
+* [ ] Email/SMS Notifications
+
+### Phase 2 — Backoffice Platform
+
+* [ ] Django Admin Dashboard
+* [ ] Financial Reporting
+* [ ] Reconciliation Tools
+* [ ] KYC Review Portal
+* [ ] Compliance Monitoring
 
 ### Phase 3 — Risk & Scale
-- [ ] FastAPI credit scoring / fraud detection
-- [ ] Extract hot services into true microservices over Kafka
-- [ ] Kubernetes deployment
+
+* [ ] FastAPI Credit Scoring Engine
+* [ ] Fraud Detection
+* [ ] Kafka Event Streaming
+* [ ] Domain Microservices
+* [ ] Kubernetes Deployment
+* [ ] Horizontal Scaling
 
 ---
 
-## Engineering principles
+## Engineering Principles
 
-- **Decimal arithmetic only** for money — never plain JS floats
-- **Soft deletes** on all financial records — never hard delete
-- **Audit log everything** — every state change has a before/after snapshot
-- **Optimistic locking** on loan records via `version` column
-- **Explicit Prisma `select`** on every query — never leak sensitive fields by default
+### Financial Integrity
+
+* Use decimal arithmetic only for money calculations
+* Never use JavaScript floating-point values for monetary operations
+
+### Data Safety
+
+* Soft-delete financial records
+* Never hard-delete transactional data
+
+### Auditing
+
+* Every state change must generate an audit log
+* Store before and after snapshots
+
+### Concurrency
+
+* Use optimistic locking through the `version` column
+
+### Security
+
+* Explicit Prisma `select` statements on all queries
+* Never expose sensitive fields by default
+
+### Scalability
+
+* Domain-driven module boundaries
+* Infrastructure prepared for service extraction
+
+---
 
 ## License
 
-UNLICENSED — Evan chimwaza
+UNLICENSED
+
+Copyright © 2026 Evan Chimwaza
