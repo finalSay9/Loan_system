@@ -64,5 +64,12 @@ export class LoansService {
     const allAppliedLoans = await this.prisma.loan.findMany({
       where:{userId: officerId}
     })
+
+    //check if loans are available
+    if(allAppliedLoans.length == 0) {
+      throw new NotFoundException('no loans available at the moment')
+    }
+
+    return allAppliedLoans;
   }
 }

@@ -1,14 +1,21 @@
-import { 
-    Body,
-    Controller, 
-    Post,
-    HttpCode,
-    HttpStatus,
-    Get,
-    Param,
-    Query,
-    UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Post,
+  HttpCode,
+  HttpStatus,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  SetMetadata,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { LoansService } from './loans.service';
 import { CreateLoanDto } from './dto/create-loan-dto';
 import { GetUser } from 'src/auth/decorators/getUser.decorator';
@@ -16,18 +23,16 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { userInfo } from 'os';
 import { LoanQueryDto } from './dto/loan-query.dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Role } from 'prisma/generated/prisma';
 
 @Controller('loans')
 export class LoansController {
   constructor(private loanService: LoansService) {}
 
-
   //creating the loans
   @UseGuards(JwtAuthGuard)
   @Post('applying')
   @HttpCode(HttpStatus.CREATED)
-  @ApiBearerAuth('access-token') 
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email already in use' })
@@ -38,39 +43,43 @@ export class LoansController {
     return await this.loanService.applyForLoan(loanDto, userId);
   }
 
-
   //user getting their loans
   @UseGuards(JwtAuthGuard)
   @Get('all')
-  @ApiBearerAuth('access-token') 
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting loans' })
   @ApiResponse({ status: 200, description: 'loans retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loans available' })
-  async getAllLoans(@GetUser('id') userId: string, loanQuery: LoanQueryDto){
-    return await this.loanService.getMyLoans(userId, loanQuery)
+  async getAllLoans(@GetUser('id') userId: string, loanQuery: LoanQueryDto) {
+    return await this.loanService.getMyLoans(userId, loanQuery);
   }
 
   //getting a loan by id
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  @ApiBearerAuth('access-token') 
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting a loan by id' })
   @ApiResponse({ status: 200, description: 'loan retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loan with that id available' })
-  async getLoanById(@Param('id') loanId: string, @GetUser('id') userId: string){
-    return await this.loanService.getLoanById(loanId, userId)
+  async getLoanById(
+    @Param('id') loanId: string,
+    @GetUser('id') userId: string,
+  ) {
+    return await this.loanService.getLoanById(loanId, userId);
   }
-
 
   //an officer getting all applied loans
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Role(Role.SUPER_ADMIN, Role.LOAN_OFFICER)
+  @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
   @Get('all-loans')
-  @ApiBearerAuth('access-token') 
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting loans' })
   @ApiResponse({ status: 200, description: 'loans retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loans available' })
-  async getAllAppliedLoans(@GetUser('id') officerId: string, loanQuery: LoanQueryDto){
-    return await this.loanService.getAllLoans(officerId, loanQuery)
+  async getAllAppliedLoans(
+    @GetUser('id') officerId: string,
+    loanQuery: LoanQueryDto,
+  ) {
+    return await this.loanService.getAllLoans(officerId, loanQuery);
   }
 }
