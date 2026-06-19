@@ -18,12 +18,12 @@ Currently in **Phase 1 — Modular Monolith**. See [Roadmap](#roadmap) for what'
 
 | Module | Status |
 |---|---|
-| Users | ✅ Registration, profile, admin search |
-| Auth | ✅ Login, JWT guard, role guard |
-| Loans | 🚧 In progress |
-| Payments | ⬜ Not started |
-| Notifications | ⬜ Not started |
-| Audit | ✅ Logging on user creation |
+| Users |  Registration, profile, admin search |
+| Auth |  Login, JWT guard, role guard |
+| Loans |  In progress |
+| Payments |  Not started |
+| Notifications |  Not started |
+| Audit |  Logging on user creation |
 
 ## Getting started
 
@@ -118,9 +118,12 @@ flowchart TB
     LOANS --> AUDIT
     PAY --> AUDIT
 
-    Core --> PG
-    Core --> REDIS
-    Backoffice --> PG
+    USERS --> PG
+    LOANS --> PG
+    PAY --> PG
+    AUTH --> REDIS
+    DJANGO --> PG
+    FASTAPI --> PG
     LOANS --> S3
 ```
 
@@ -141,8 +144,8 @@ erDiagram
         string phone
         string email
         string password_hash
-        enum role
-        enum kyc_status
+        string role
+        string kyc_status
         timestamp created_at
     }
 
@@ -151,7 +154,7 @@ erDiagram
         uuid user_id FK
         decimal amount
         string purpose
-        enum status
+        string status
         decimal interest_rate
         int term_months
         int version
@@ -194,17 +197,26 @@ erDiagram
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDING: Borrower applies
-    PENDING --> UNDER_REVIEW: Officer opens application
-    UNDER_REVIEW --> APPROVED: Officer approves
-    UNDER_REVIEW --> REJECTED: Officer rejects
-    APPROVED --> DISBURSED: Funds sent to borrower
-    DISBURSED --> ACTIVE: Repayment schedule generated
-    ACTIVE --> CLOSED: Fully repaid
-    ACTIVE --> DEFAULTED: Missed payments threshold
+    [*] --> PENDING
+    PENDING --> UNDER_REVIEW
+    UNDER_REVIEW --> APPROVED
+    UNDER_REVIEW --> REJECTED
+    APPROVED --> DISBURSED
+    DISBURSED --> ACTIVE
+    ACTIVE --> CLOSED
+    ACTIVE --> DEFAULTED
     REJECTED --> [*]
     CLOSED --> [*]
     DEFAULTED --> [*]
+
+    note right of PENDING : Borrower applies
+    note right of UNDER_REVIEW : Officer opens application
+    note right of APPROVED : Officer approves
+    note right of REJECTED : Officer rejects
+    note right of DISBURSED : Funds sent to borrower
+    note right of ACTIVE : Repayment schedule generated
+    note right of CLOSED : Fully repaid
+    note right of DEFAULTED : Missed payments threshold
 ```
 
 ## Auth flow
@@ -215,18 +227,18 @@ sequenceDiagram
     participant API as NestJS API
     participant DB as PostgreSQL
 
-    C->>API: POST /auth/login {phone, password}
-    API->>DB: findUnique(phone)
-    DB-->>API: user record
-    API->>API: bcrypt.compare(password, hash)
-    API->>API: jwtService.signAsync(payload)
-    API-->>C: { access_token, data }
+    C->>API: POST /auth/login
+    API->>DB: findUnique by phone
+    DB->>API: user record
+    API->>API: compare password hash
+    API->>API: sign JWT
+    API->>C: access_token + user data
 
-    C->>API: GET /users/profile (Bearer token)
-    API->>API: JwtStrategy.validate(payload)
-    API->>DB: findUnique(id)
-    DB-->>API: user record
-    API-->>C: user profile
+    C->>API: GET /users/profile
+    API->>API: validate JWT payload
+    API->>DB: findUnique by id
+    DB->>API: user record
+    API->>C: user profile
 ```
 
 ---
@@ -287,4 +299,4 @@ sequenceDiagram
 
 ## License
 
-UNLICENSED — private project
+UNLICENSED — Evan chimwaza
