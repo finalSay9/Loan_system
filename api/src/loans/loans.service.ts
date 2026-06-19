@@ -59,14 +59,14 @@ export class LoansService {
   }
 
   //getting all loans applied by users for admins only
-  async getAllLoans(officerId: string, queryDto: LoanQueryDto) {
+  async getAllLoans(queryDto: LoanQueryDto) {
     //looking up in the database
     const allAppliedLoans = await this.prisma.loan.findMany({
-      where:{userId: officerId}
+    
     })
 
     //check if loans are available
-    if(allAppliedLoans.length == 0) {
+    if(allAppliedLoans.length === 0) {
       throw new NotFoundException('no loans available at the moment')
     }
 
