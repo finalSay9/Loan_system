@@ -69,16 +69,14 @@ export class LoansController {
   //getting a loan by id
   @UseGuards(JwtAuthGuard, RolesGuard)
   @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
-  @Get(':id')
+  @Get('admin/:id')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting a loan by id' })
   @ApiResponse({ status: 200, description: 'loan retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loan with that id available' })
   async adminGetLoanById(
-    @Param('id') loanId: string,
-    @GetUser('id') userId: string,
-  ) {
-    return await this.loanService.getLoanById(loanId, userId);
+    @Param('id') loanId: string) {
+    return await this.loanService.adminGetLoanById(loanId);
   }
 
   //admin looking loan in details  by id

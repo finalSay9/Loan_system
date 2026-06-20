@@ -75,14 +75,14 @@ export class LoansService {
   //loan officer sees any loan in deatil
   async adminGetLoanById(loanId: string){
     //looking for the loan in the database
-    const loan_id = await this.prisma.loan.findUnique({
+    const loan = await this.prisma.loan.findUnique({
       where: {id: loanId}
     })
     //if no loan
-    if(!loan_id){
-      throw new NotFoundException('no loan this id exist')
+    if(!loan){
+      throw new NotFoundException('no loan with this id exist')
     }
 
-    return loan_id;
+    return loan;
   }
 }
