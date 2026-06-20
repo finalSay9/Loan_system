@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateLoanDto } from './dto/create-loan-dto';
-import { NotFoundError } from 'rxjs';
 import { LoanQueryDto } from './dto/loan-query.dto';
 
 @Injectable()
