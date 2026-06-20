@@ -23,6 +23,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { userInfo } from 'os';
 import { LoanQueryDto } from './dto/loan-query.dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
+import { ParseUUIDPipe } from '@nestjs/common';
 
 @Controller('loans')
 export class LoansController {
@@ -75,8 +76,8 @@ export class LoansController {
   @ApiResponse({ status: 200, description: 'loan retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loan with that id available' })
   async adminGetLoanById(
-    @Param('id') loanId: string) {
-    return await this.loanService.adminGetLoanById(loanId);
+    @Param('id', ParseUUIDPipe) loanId: string) {
+    return this.loanService.adminGetLoanById(loanId);
   }
 
   //admin looking loan in details  by id
