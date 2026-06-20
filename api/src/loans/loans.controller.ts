@@ -62,11 +62,26 @@ export class LoansController {
   @ApiOperation({ summary: 'getting loans' })
   @ApiResponse({ status: 200, description: 'loans retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loans available' })
-  async getAllAppliedLoans(loanQuery: LoanQueryDto,) {
+  async getAllAppliedLoans(loanQuery: LoanQueryDto) {
     return await this.loanService.getAllLoans(loanQuery);
   }
 
   //getting a loan by id
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+  @Get(':id')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'getting a loan by id' })
+  @ApiResponse({ status: 200, description: 'loan retrived successfully' })
+  @ApiResponse({ status: 409, description: 'no loan with that id available' })
+  async adminGetLoanById(
+    @Param('id') loanId: string,
+    @GetUser('id') userId: string,
+  ) {
+    return await this.loanService.getLoanById(loanId, userId);
+  }
+
+  //admin looking loan in details  by id
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   @ApiBearerAuth('access-token')
