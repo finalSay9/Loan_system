@@ -85,4 +85,13 @@ export class LoansService {
 
     return loan;
   }
+
+
+  //system disburse loan
+  async disburseLoan() {
+    
+  }
+
+
+
 }
