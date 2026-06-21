@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateLoanDto } from './dto/create-loan-dto';
 import { LoanQueryDto } from './dto/loan-query.dto';
+import { UpdateLoanStatusDto } from './dto/update-status-loan.dto';
 
 @Injectable()
 export class LoansService {
@@ -85,6 +86,13 @@ export class LoansService {
 
     return loan;
   }
+
+  //update loan status 
+  async updateLoanStatus(updateStatus: UpdateLoanStatusDto, loanId: string) {
+    
+  }
+
+
 
 
   //system disburse loan
