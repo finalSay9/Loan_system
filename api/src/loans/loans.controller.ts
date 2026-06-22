@@ -108,7 +108,7 @@ export class LoansController {
   async updatingLoanStatus(
     @Param('id') loanId: string,
     @Body() status: UpdateLoanStatusDto, 
-    @GetUser() actorId: string, 
+    @GetUser('id') actorId: string, 
   ) {
     return await this.loanService.updateLoanStatus(loanId, status, actorId);
   }

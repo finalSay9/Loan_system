@@ -88,6 +88,7 @@ export class LoansService {
     updateStatus: UpdateLoanStatusDto,
     actorId: string,
   ) {
+    console.log('Loan ID:', loanId);
     // Look for the loan in the database
     const appliedLoan = await this.prisma.loan.findUnique({
       where: { id: loanId },
