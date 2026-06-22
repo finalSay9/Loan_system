@@ -89,12 +89,15 @@ export class LoansService {
   }
 
   //update loan status 
-  async updateLoanStatus(updateStatus: UpdateLoanStatusDto, loanId: string) {
+  async updateLoanStatus(
+    loanId: string,
+    updateStatus: UpdateLoanStatusDto,
+    actorId: string) {
     const updateLoan = updateStatus;
     //looking up for the loan
-    const appliedLoan = await this.prisma.loan.findUnique({
-      where: {id: loanId},
-      // LoanStatus: updateLoan
+    const appliedLoan = await this.prisma.loan.update({
+      where:{LoanStatus: status}
+      
     })
 
     if(!appliedLoan) {
