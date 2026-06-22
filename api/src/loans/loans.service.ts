@@ -106,7 +106,29 @@ export class LoansService {
 
     //defining the allowed statuses
     const validTransctions: Record<LoanStatus,LoanStatus[]> = {
-      
+      //new application can only move to review
+      PENDING: [
+        LoanStatus.UNDER_REVIEW
+      ],
+
+      //during the review it can be approved, else esnt back to review
+      UNDER_REVIEW: [
+        LoanStatus.APPROVED,
+        LoanStatus.PENDING
+      ],
+
+      //once approved....then disbursed
+      APPROVED: [
+        LoanStatus.DISBURSED
+      ],
+
+       // After money is released,
+      // the loan can either be completed
+     // or become defaulted
+    DISBURSED: [
+      LoanStatus.CLOSED,
+      LoanStatus.DEFAULTED,
+    ],
     }
 
     return appliedLoan;
