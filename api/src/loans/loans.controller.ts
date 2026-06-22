@@ -24,6 +24,7 @@ import { userInfo } from 'os';
 import { LoanQueryDto } from './dto/loan-query.dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { ParseUUIDPipe } from '@nestjs/common';
+import { UpdateLoanStatusDto } from './dto/update-status-loan.dto';
 
 @Controller('loans')
 export class LoansController {
@@ -104,8 +105,10 @@ export class LoansController {
   @ApiResponse({ status: 409, description: 'no loan with that id available' })
   async updatingLoanStatus(
     @Param('id') loanId: string,
-    updateLoan: UpdateLoanStatusDto
+    @Body() status: UpdateLoanStatusDto, 
+    @Param('id') actorId: string 
   ) {
-    return await this.loanService.updateLoanStatus(loanId, updateLoan);
+    return await this.loanService.updateLoanStatus(loanId, status, actorId);
+  }
 
 }
