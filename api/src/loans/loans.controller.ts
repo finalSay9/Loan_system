@@ -99,7 +99,7 @@ export class LoansController {
 
   //updating the loan status
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Patch('update_status')
+  @Patch(':id/update_status')
   @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting a loan by id' })
