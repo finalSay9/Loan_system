@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateLoanDto } from './dto/create-loan-dto';
 import { LoanQueryDto } from './dto/loan-query.dto';
@@ -144,7 +144,27 @@ export class LoansService {
      * allowed=[DISBURSED]
      */
 
-    const allowed = validTransctions[loan.status]
+    const allowed = validTransctions[appliedLoan.status];
+
+    /**
+     * now we need to check whether the requested status change
+     * can be allowed or not
+     * for instance if
+     * 
+     * current = PENDING
+     * requested = BISBURSED
+     * 
+     * SO FOR THE REASON THAT DISBURSED IS NOT IN
+     * [UNDER_REVIEW]
+     * 
+     * You will definetly get an error
+     */
+
+    if(!allowed.includes(updateStatus.status)) {
+      throw new BadRequestException(
+        `Cannot move loan from ${appliedLoan.status} to ${updateStatus.status}`,
+      );
+    }
 
     return appliedLoan;
   }
