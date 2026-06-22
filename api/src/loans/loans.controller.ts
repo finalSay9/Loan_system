@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Post,
+  Patch,
   HttpCode,
   HttpStatus,
   Get,
@@ -98,6 +99,7 @@ export class LoansController {
 
   //updating the loan status
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('update_status')
   @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting a loan by id' })
@@ -106,7 +108,7 @@ export class LoansController {
   async updatingLoanStatus(
     @Param('id') loanId: string,
     @Body() status: UpdateLoanStatusDto, 
-    @Param('id') actorId: string 
+    @GetUser() actorId: string, 
   ) {
     return await this.loanService.updateLoanStatus(loanId, status, actorId);
   }
