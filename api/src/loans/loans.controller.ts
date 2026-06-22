@@ -93,4 +93,19 @@ export class LoansController {
   ) {
     return await this.loanService.getLoanById(loanId, userId);
   }
+
+
+  //updating the loan status
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'getting a loan by id' })
+  @ApiResponse({ status: 200, description: 'loan retrived successfully' })
+  @ApiResponse({ status: 409, description: 'no loan with that id available' })
+  async updatingLoanStatus(
+    @Param('id') loanId: string,
+    updateLoan: UpdateLoanStatusDto
+  ) {
+    return await this.loanService.updateLoanStatus(loanId, updateLoan);
+
 }
