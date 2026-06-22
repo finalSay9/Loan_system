@@ -166,6 +166,47 @@ export class LoansService {
       );
     }
 
+  // so now lets deal with transCTIONS
+  // all operations definetly must successed
+  // 1. update loan status and 2. audit log
+  // if it fails the database should role back
+
+  return this.prisma.$transaction(async(tx) => {
+    /**
+     * update the loan record
+     *
+     */
+    const statusUpdate = await tx.loan.update({
+      where: { id: loanId },
+      data: {
+        //new status requested by the officer
+        status: updateStatus.status,
+        //versioning
+        version: {
+          increment: 1,
+        },
+      },
+    });
+
+    /**
+     * now lest create the audit log
+     * to see
+     * - Who changed something
+     * - What changed
+     * - When it changed
+     * - Previous value
+     * - New value
+     */
+
+    await tx.auditLog.create({
+      data: {
+        //admin who made the change
+        
+      }
+    })
+  })
+
+
     return appliedLoan;
   }
 
