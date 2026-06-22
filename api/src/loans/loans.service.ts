@@ -210,6 +210,15 @@ export class LoansService {
         entityType: 'Loan',
 
         //loan modified by id
+        entityId: loanId,
+
+        /**
+         * also need to store old status / snapshots
+         * 
+         */
+        beforeState: {
+          status: updateStatus.status
+        }
       }
     })
   })
