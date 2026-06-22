@@ -124,12 +124,27 @@ export class LoansService {
 
        // After money is released,
       // the loan can either be completed
-     // or become defaulted
-    DISBURSED: [
-      LoanStatus.CLOSED,
-      LoanStatus.DEFAULTED,
-    ],
-    }
+     
+      // or become defaulted
+      DISBURSED: [
+        LoanStatus.CLOSED,
+        LoanStatus.DEFAULTED,
+      ],
+
+      //final state
+
+      CLOSED: [],
+      DEFAULTED: []
+    };
+
+    /**
+     * NOW get the list of status that the current status can transition
+     * into for example
+     * if loan.status = approved
+     * allowed=[DISBURSED]
+     */
+
+    const allowed = validTransctions[loan.status]
 
     return appliedLoan;
   }
