@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateLoanDto } from './dto/create-loan-dto';
 import { LoanQueryDto } from './dto/loan-query.dto';
 import { UpdateLoanStatusDto } from './dto/update-status-loan.dto';
+import { LoanStatus } from 'prisma/generated/prisma';
 
 @Injectable()
 export class LoansService {
@@ -92,7 +93,8 @@ export class LoansService {
     const updateLoan = updateStatus;
     //looking up for the loan
     const appliedLoan = await this.prisma.loan.findUnique({
-      where: {id: loanId}
+      where: {id: loanId},
+      // LoanStatus: updateLoan
     })
 
     if(!appliedLoan) {
