@@ -201,7 +201,15 @@ export class LoansService {
     await tx.auditLog.create({
       data: {
         //admin who made the change
-        
+        actorId,
+
+        //action performed
+        action: 'UPDATE_LOAN_STATUS',
+
+        //TYPE of entiy modified
+        entityType: 'Loan',
+
+        //loan modified by id
       }
     })
   })
