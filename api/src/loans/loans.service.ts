@@ -92,17 +92,23 @@ export class LoansService {
   async updateLoanStatus(
     loanId: string,
     updateStatus: UpdateLoanStatusDto,
-    actorId: string) {
-    const updateLoan = updateStatus;
+    actorId: string
+  ) {
     //looking up for the loan
-    const appliedLoan = await this.prisma.loan.update({
-      where:{LoanStatus: status}
-      
+    const appliedLoan = await this.prisma.loan.findUnique({
+      where:{id: loanId}
     })
 
+    //if you see the loan aint in the database stop execution
     if(!appliedLoan) {
       throw new NotFoundException('this loan is not available');
     }
+
+    //defining the allowed statuses
+    const validTransctions: Record<LoanStatus,LoanStatus[]> = {
+      
+    }
+
     return appliedLoan;
   }
 
