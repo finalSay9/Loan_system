@@ -228,8 +228,25 @@ export class LoansService {
      * lets define the valid state
      * for system to disburse the loan
      */
-    const validState: Record<LoanStatus, LoanStatus> = {
+    const validatedState: Record<LoanStatus, LoanStatus> = {
+    // Define valid loan status transitions
+    
+      // New application can only move to review
+      PENDING: [LoanStatus.UNDER_REVIEW],
+
+      // During review, it can be approved or sent back to pending
+      UNDER_REVIEW: [LoanStatus.APPROVED, LoanStatus.PENDING],
+
+      // Once approved, funds can be released
       APPROVED: [LoanStatus.DISBURSED],
-    }
+
+      // After disbursement, loan can be completed or defaulted
+      DISBURSED: [LoanStatus.CLOSED, LoanStatus.DEFAULTED],
+
+      // Final states
+      CLOSED: [],
+      DEFAULTED: [],
+    
   }
+}
 }
