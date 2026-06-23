@@ -228,9 +228,8 @@ export class LoansService {
      * lets define the valid state
      * for system to disburse the loan
      */
-    const validatedState: Record<LoanStatus, LoanStatus> = {
     // Define valid loan status transitions
-    
+    const validatedState: Record<LoanStatus, LoanStatus[]> = {
       // New application can only move to review
       PENDING: [LoanStatus.UNDER_REVIEW],
 
@@ -246,7 +245,15 @@ export class LoansService {
       // Final states
       CLOSED: [],
       DEFAULTED: [],
-    
-  }
+    };
+
+    //permited
+    const permitedState = validatedState[approvedLoan.status];
+
+    /**
+     * validating id it contens
+     * the approved state
+     */
+    if(!permitedState.includes())
 }
 }
