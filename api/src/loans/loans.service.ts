@@ -88,7 +88,7 @@ export class LoansService {
     updateStatus: UpdateLoanStatusDto,
     actorId: string,
   ) {
-    console.log('Loan ID:', loanId);
+    //console.log('Loan ID:', loanId);
     // Look for the loan in the database
     const appliedLoan = await this.prisma.loan.findUnique({
       where: { id: loanId },
@@ -222,6 +222,14 @@ export class LoansService {
      */
     if(!approvedLoan) {
       throw new NotFoundException('the loan is not available');
+    }
+
+    /**
+     * lets define the valid state
+     * for system to disburse the loan
+     */
+    const validState: Record<LoanStatus, LoanStatus> = {
+      APPROVED: [LoanStatus.DISBURSED],
     }
   }
 }
