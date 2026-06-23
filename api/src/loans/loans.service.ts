@@ -207,8 +207,6 @@ export class LoansService {
   //system disburse loan
   async disburseLoan(
     loanId: string, // the id of the loan
-    borrowerId: string, //the user who received the money
-    officerId: string, // the officer responsible for the approval of the loan
-    amount: number, // the amount disbursed
+    
   ) {}
 }
