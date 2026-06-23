@@ -207,6 +207,13 @@ export class LoansService {
   //system disburse loan
   async disburseLoan(
     loanId: string, // the id of the loan
-    
-  ) {}
+  ) {
+    /**
+     * looking up
+     * for the loan
+     */
+    const approvedLoan = await this.prisma.loan.findUnique({
+      where: {id: loanId}
+    })
+  }
 }
