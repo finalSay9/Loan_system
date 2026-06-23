@@ -215,5 +215,13 @@ export class LoansService {
     const approvedLoan = await this.prisma.loan.findUnique({
       where: {id: loanId}
     })
+
+    /**
+     * if its not
+     * available
+     */
+    if(!approvedLoan) {
+      throw new NotFoundException('the loan is not available');
+    }
   }
 }
