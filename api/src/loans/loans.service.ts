@@ -41,10 +41,7 @@ export class LoansService {
        orderBy: {createdAt: 'desc'}
     });
 
-    //check if the loans are available
-    if (userLoans.length === 0) {
-      throw new NotFoundException('no available loans at the moment');
-    }
+    
     return {
       data: userLoans,
       meta: {page, limit, count: userLoans.length}
@@ -77,6 +74,12 @@ export class LoansService {
 
   //getting all loans applied by users for admins only
   async getAllLoans(queryDto: LoanQueryDto) {
+
+    /**
+     * pagination
+     */
+    const page = queryDto.page ?? 1;
+    const limit = queryDto.limit ?? 10;
     //looking up in the database
     const allAppliedLoans = await this.prisma.loan.findMany({});
 
