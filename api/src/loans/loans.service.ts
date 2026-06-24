@@ -37,14 +37,19 @@ export class LoansService {
         ...(queryDto.status && {status: queryDto.status}),
        },
        skip: (page - 1) * limit,
-       take: limit
+       take: limit,
+       orderBy: {createdAt: 'desc'}
     });
 
     //check if the loans are available
     if (userLoans.length === 0) {
       throw new NotFoundException('no available loans at the moment');
     }
-    return userLoans;
+    return {
+      data: userLoans,
+      meta: {page, limit, count: userLoans.length}
+    }
+
   }
 
   //getting a loan by id
