@@ -221,7 +221,8 @@ export class LoansService {
 
     /**
      * now the approved loan can be 
-     * disbursed by the system
+     * disbursed by the system if and olny if the 
+     * the condition status can be met
      */
     if(approvedLoan.status !== LoanStatus.APPROVED) {
       throw new BadRequestException(
@@ -230,6 +231,7 @@ export class LoansService {
 
     /**
      * now disburse loan
+     * after passing the above condition
      */
     const disburseLoan = await this.prisma.loan.update({
       where: {id: loanId},
