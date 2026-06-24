@@ -258,6 +258,20 @@ export class LoansService {
       throw new BadRequestException(`Cannot disburse loan from ${approvedLoan.status} to ${LoanStatus.DISBURSED}`); 
     }
 
+    /**
+     * now disburse the loan
+     */
+    const disbursedLoan = await this.prisma.loan.update({
+      where: {
+        id: loanId
+      },
+      data: {
+        status: LoanStatus.DISBURSED,
+        version: {
+          increment: 1,
+        }
+      }
+    })
     
 }
 }
