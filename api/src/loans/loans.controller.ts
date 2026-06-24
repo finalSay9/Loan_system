@@ -120,5 +120,12 @@ export class LoansController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(':id/disburse-loan')
   @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'disbursing the loan' })
+  @ApiResponse({ status: 200, description: 'the operation worked successfully' })
+  @ApiResponse({ status: 409, description: 'no loan with that id available' })
+  async disburseLoan(loanId: string) {
+    return this.loanService.disburseLoan(loanId);
+  }
 
 }
