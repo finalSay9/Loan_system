@@ -204,74 +204,33 @@ export class LoansService {
     });
   }
 
-  //system disburse loan
-  async disburseLoan(
-    loanId: string, // the id of the loan
-  ) {
-    /**
-     * looking up
-     * for the loan
-     */
+
+  /**
+   * now the system disburse the loan
+   */
+  async disburseLoan(loanId: string) {
+    //look for loan in the database
     const approvedLoan = await this.prisma.loan.findUnique({
-      where: {id: loanId}
-    })
+      where: {id: loanId},
+    });
 
-    /**
-     * if its not
-     * available
-     */
+    //if not available
     if(!approvedLoan) {
-      throw new NotFoundException('the loan is not available');
-    }
-
-    /**
-     * lets define the valid state
-     * for system to disburse the loan
-     */
-    // Define valid loan status transitions
-    const validatedState: Record<LoanStatus, LoanStatus[]> = {
-      // New application can only move to review
-      PENDING: [LoanStatus.UNDER_REVIEW],
-
-      // During review, it can be approved or sent back to pending
-      UNDER_REVIEW: [LoanStatus.APPROVED, LoanStatus.PENDING],
-
-      // Once approved, funds can be released
-      APPROVED: [LoanStatus.DISBURSED],
-
-      // After disbursement, loan can be completed or defaulted
-      DISBURSED: [LoanStatus.CLOSED, LoanStatus.DEFAULTED],
-
-      // Final states
-      CLOSED: [],
-      DEFAULTED: [],
+      throw new NotFoundException('the loan with this id not available')
     };
 
-    //permited
-    const permitedState = validatedState[approvedLoan.status];
-
     /**
-     * validating id it contens
-     * the approved state
+     * now the approved loan can be 
+     * disbursed by the system
      */
-    if(!permitedState) {
-      throw new BadRequestException(`Cannot disburse loan from ${approvedLoan.status} to ${LoanStatus.DISBURSED}`); 
+    if(approvedLoan.status !== LoanStatus.APPROVED) {
+      throw new BadRequestException(
+        `Loan must be APPROVED before disbursement. Current status is ${approvedLoan.status}`,)
     }
 
     /**
-     * now disburse the loan
+     * now disburse loan
      */
-    const disbursedLoan = await this.prisma.loan.update({
-      where: {
-        id: loanId
-      },
-      data: {
-        status: LoanStatus.DISBURSED,
-        version: {
-          increment: 1,
-        }
-      }
-    })
-    
-}
+    const disburseLoan = await this.prisma.loan.update
+  }
 }
