@@ -39,8 +39,13 @@ export class LoansService {
 
   //getting a loan by id
   async getLoanById(loanId: string, userId: string) {
-    //check if a loan by that id is available
-    const userLoan = await this.prisma.loan.findUnique({
+    /**
+     * used the findFirst so that i can combine the two
+     * fields...without any problem
+     * unlike findUniques that requires 2 unique identifier
+     * forming a compound unique to check for user
+     */
+    const userLoan = await this.prisma.loan.findFirst({
       where: {
         id: loanId,
         userId: userId,
