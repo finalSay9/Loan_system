@@ -82,12 +82,20 @@ export class LoansService {
     const limit = queryDto.limit ?? 10;
     //looking up in the database
     const allAppliedLoans = await this.prisma.loan.findMany({
-      ...(queryDto.status && {status: queryDto.status})
+      where: {
+        ...(queryDto.status && { status: queryDto.status }),
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: {createdAt: 'desc'}
     });
 
     
 
-    return allAppliedLoans;
+    return {
+      data: allAppliedLoans,
+      meta: {page, limit, count: allAppliedLoans.length}
+    };
   }
 
   //loan officer sees any loan in deatil
