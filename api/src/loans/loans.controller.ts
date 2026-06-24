@@ -113,4 +113,12 @@ export class LoansController {
     return await this.loanService.updateLoanStatus(loanId, status, actorId);
   }
 
+  /**
+   * now disburse the
+   * loan
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post(':id/disburse-loan')
+  @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+
 }
