@@ -231,6 +231,16 @@ export class LoansService {
     /**
      * now disburse loan
      */
-    const disburseLoan = await this.prisma.loan.update
+    const disburseLoan = await this.prisma.loan.update({
+      where: {id: loanId},
+      data: {
+        status: LoanStatus.DISBURSED,
+        version: {
+          increment: 1
+        }
+      }
+    })
+
+    return disburseLoan;
   }
 }
