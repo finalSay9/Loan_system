@@ -254,6 +254,10 @@ export class LoansService {
      * validating id it contens
      * the approved state
      */
-    if(!permitedState.includes())
+    if(!permitedState) {
+      throw new BadRequestException(`Cannot disburse loan from ${approvedLoan.status} to ${LoanStatus.DISBURSED}`); 
+    }
+
+    
 }
 }
