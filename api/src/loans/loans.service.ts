@@ -25,6 +25,11 @@ export class LoansService {
 
   //get my loans
   async getMyLoans(userId: string, queryDto: LoanQueryDto) {
+    /**
+     * pagnation
+     */
+    const page = queryDto.page ?? 1;
+    
     //looking for thr loans of the uyser
     const userLoans = await this.prisma.loan.findMany({
       where: { userId: userId },

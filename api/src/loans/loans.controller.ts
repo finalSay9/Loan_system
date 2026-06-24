@@ -68,7 +68,7 @@ export class LoansController {
   @ApiOperation({ summary: 'getting loans' })
   @ApiResponse({ status: 200, description: 'loans retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loans available' })
-  async getAllAppliedLoans(loanQuery: LoanQueryDto) {
+  async getAllAppliedLoans(@Query() loanQuery: LoanQueryDto) {
     return await this.loanService.getAllLoans(loanQuery);
   }
 
