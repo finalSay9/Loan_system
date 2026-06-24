@@ -124,7 +124,7 @@ export class LoansController {
   @ApiOperation({ summary: 'disbursing the loan' })
   @ApiResponse({ status: 200, description: 'the operation worked successfully' })
   @ApiResponse({ status: 409, description: 'no loan with that id available' })
-  async disburseLoan(loanId: string) {
+  async disburseLoan(@Param('id') loanId: string) {
     return this.loanService.disburseLoan(loanId);
   }
 
