@@ -29,10 +29,15 @@ export class LoansService {
      * pagnation
      */
     const page = queryDto.page ?? 1;
-    
+    const limit = queryDto.limit ?? 10;
     //looking for thr loans of the uyser
     const userLoans = await this.prisma.loan.findMany({
-      where: { userId: userId },
+      where: { 
+        userId: userId,
+        ...(queryDto.status && {status: queryDto.status}),
+       },
+       skip: (page - 1) * limit,
+       take: limit
     });
 
     //check if the loans are available
