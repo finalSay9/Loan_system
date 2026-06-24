@@ -81,12 +81,11 @@ export class LoansService {
     const page = queryDto.page ?? 1;
     const limit = queryDto.limit ?? 10;
     //looking up in the database
-    const allAppliedLoans = await this.prisma.loan.findMany({});
+    const allAppliedLoans = await this.prisma.loan.findMany({
+      ...(queryDto.status && {status: queryDto.status})
+    });
 
-    //check if loans are available
-    if (allAppliedLoans.length === 0) {
-      throw new NotFoundException('no loans available at the moment');
-    }
+    
 
     return allAppliedLoans;
   }
