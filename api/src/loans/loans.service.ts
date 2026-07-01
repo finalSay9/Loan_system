@@ -286,11 +286,9 @@ export class LoansService {
 
         }
       });
-    };
-
-    
+      return disbursed;
+    })
    
-
-    return disburseLoan;
+    
   }
 }
