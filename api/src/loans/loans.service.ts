@@ -283,9 +283,16 @@ export class LoansService {
           entityId: loanId,
           beforeState: { status: approvedLoan.status },
           afterState: { status: LoanStatus.DISBURSED },
-
         }
       });
+
+      /**
+       * generate payment
+       * schedule
+       */
+      
+
+
       return disbursed;
     })
    

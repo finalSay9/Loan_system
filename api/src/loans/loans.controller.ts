@@ -114,7 +114,7 @@ export class LoansController {
   @ApiResponse({ status: 200, description: 'loan retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loan with that id available' })
   async updatingLoanStatus(
-    @Param('id') loanId: string,
+    @Param('id', ParseUUIDPipe) loanId: string,
     @Body() status: UpdateLoanStatusDto, 
     @GetUser('id') actorId: string, 
   ) {
