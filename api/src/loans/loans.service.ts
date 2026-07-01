@@ -264,7 +264,10 @@ export class LoansService {
      */
     return this.prisma.$transaction(async (tx) => {
       const disbursed = await tx.loan.update({
-        where: {id: loanId}
+        where: {id: loanId},
+        data: {
+          status: LoanStatus.DISBURSED
+        }
       })
     })
 
