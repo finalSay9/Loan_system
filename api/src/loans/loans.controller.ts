@@ -62,7 +62,7 @@ export class LoansController {
 
   //an officer getting all applied loans
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+  @Roles()
   @Get('all-loans')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting loans' })
