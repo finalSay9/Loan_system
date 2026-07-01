@@ -21,7 +21,6 @@ import { LoansService } from './loans.service';
 import { CreateLoanDto } from './dto/create-loan-dto';
 import { GetUser } from 'src/auth/decorators/getUser.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
-import { userInfo } from 'os';
 import { LoanQueryDto } from './dto/loan-query.dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { ParseUUIDPipe } from '@nestjs/common';
@@ -62,7 +61,7 @@ export class LoansController {
 
   //an officer getting all applied loans
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles()
+  @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
   @Get('all-loans')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting loans' })
