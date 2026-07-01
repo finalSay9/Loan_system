@@ -277,6 +277,12 @@ export class LoansService {
        */
       await tx.auditLog.create({
         data: {
+          actorId,
+          action: 'DISBURSE_LOAN',
+          entityType: 'LOAN',
+          entityId: loanId,
+          beforeState: { status: approvedLoan.status },
+          afterState: { status: LoanStatus.DISBURSED },
 
         }
       });
