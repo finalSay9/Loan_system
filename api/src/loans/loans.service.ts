@@ -260,8 +260,17 @@ export class LoansService {
     }
 
     /**
+     * audit log
+     */
+    return this.prisma.$transaction(async (tx) => {
+      const disbursed = await tx.loan.update({
+        where: {id: loanId}
+      })
+    })
+
+    /**
      * now disburse loan
-     * after passing the above condition
+     * after meeting the above condition
      */
     const disburseLoan = await this.prisma.loan.update({
       where: {id: loanId},
