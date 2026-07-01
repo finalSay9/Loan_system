@@ -45,7 +45,10 @@ export class LoansController {
     return await this.loanService.applyForLoan(loanDto, userId);
   }
 
-  //user getting their loans
+  /**
+   * a user getting 
+   * thier loans
+   */
   @UseGuards(JwtAuthGuard)
   @Get('all')
   @ApiBearerAuth('access-token')
@@ -59,7 +62,10 @@ export class LoansController {
     return await this.loanService.getMyLoans(userId, loanQuery);
   }
 
-  //an officer getting all applied loans
+  /**
+   * an officer getting
+   * all applied loans
+   */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
   @Get('all-loans')
