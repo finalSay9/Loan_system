@@ -238,7 +238,7 @@ export class LoansService {
   /**
    * now the system disburse the loan
    */
-  async disburseLoan(loanId: string) {
+  async disburseLoan(loanId: string, actorId: string) {
     //look for loan in the database
     const approvedLoan = await this.prisma.loan.findUnique({
       where: {id: loanId},
@@ -264,26 +264,26 @@ export class LoansService {
      */
     return this.prisma.$transaction(async (tx) => {
       const disbursed = await tx.loan.update({
-        where: {id: loanId},
+        where: { id: loanId },
         data: {
-          status: LoanStatus.DISBURSED
-        }
-      })
-    })
+          status: LoanStatus.DISBURSED,
+          disbursedAt: new Date(),
+          version: { increment: 1 },
+        },
+      });
 
-    /**
-     * now disburse loan
-     * after meeting the above condition
-     */
-    const disburseLoan = await this.prisma.loan.update({
-      where: {id: loanId},
-      data: {
-        status: LoanStatus.DISBURSED,
-        version: {
-          increment: 1
+      /**
+       * audit log
+       */
+      await tx.auditLog.create({
+        data: {
+
         }
-      }
-    })
+      });
+    };
+
+    
+   
 
     return disburseLoan;
   }
