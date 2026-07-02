@@ -303,12 +303,23 @@ export class LoansService {
        * now calculating the pricipal
        * if the loan is 40000
        * and term = 12 months
+       * the math = 40000/12
+       * this means the borrower pays 3333.3 every month
        */
       const principalPerMonth = approvedLoan.amount.toNumber() /
       approvedLoan.termMonths;
 
+
+      /**
+       * now calculating the monthly payment
+       * principal + monthlyPay = x + 3333.3
+       */
       const monthlyPayment = principalPerMonth + monthlyInterest;
 
+
+      /**
+       * now to generate one row for every month
+       */
       const scheduleRows =  Array.from({
         length: approvedLoan.termMonths
       },
