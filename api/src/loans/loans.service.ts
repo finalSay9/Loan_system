@@ -290,9 +290,20 @@ export class LoansService {
        * generate payment
        * schedule
        */
+
+      /**
+       * here we are calculating thw interest rate
+       * suppose the loan is 12000, and IR= 12% the math 
+       * will be (12000 * (12/100))/ and dived by 12 since its every month
+       */
       const monthlyInterest = approvedLoan.amount.toNumber() * 
       (approvedLoan.interestRate.toNumber() / 100) /12;
       
+      /**
+       * now calculating the pricipal
+       * if the loan is 40000
+       * and term = 12 months
+       */
       const principalPerMonth = approvedLoan.amount.toNumber() /
       approvedLoan.termMonths;
 
@@ -301,12 +312,11 @@ export class LoansService {
       const scheduleRows =  Array.from({
         length: approvedLoan.termMonths
       },
-      (_, i => {
-        const dueDate = new Date(disbursed.disbursedAt!)
+      (_, i) => {
+        const dueDate = new Date(disbursed.disbursedAt!);
+        dueDate.setMonth(dueDate.getMonth() + i + 1)
       })
-    )
-
-
+    
       return disbursed;
     })
    
