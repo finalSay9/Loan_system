@@ -291,7 +291,12 @@ export class LoansService {
        * schedule
        */
       const monthlyInterest = approvedLoan.amount.toNumber() * 
-      (approvedLoan.interestRate.toNumber() / 100) /12
+      (approvedLoan.interestRate.toNumber() / 100) /12;
+      
+      const principalPerMonth = approvedLoan.amount.toNumber() /
+      approvedLoan.termMonths;
+
+      const monthlyPayment = principalPerMonth + monthlyInterest;
 
 
       return disbursed;
