@@ -290,7 +290,8 @@ export class LoansService {
        * generate payment
        * schedule
        */
-      
+      const monthlyInterest = approvedLoan.amount.toNumber() * 
+      (approvedLoan.interestRate.toNumber() / 100) /12
 
 
       return disbursed;
