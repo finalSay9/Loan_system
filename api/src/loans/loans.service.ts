@@ -324,17 +324,17 @@ export class LoansService {
       const scheduleRows = [];
       let remainingBalance = principal;
 
-      for(let i = 0; i < totalMonths; i++) {
+      for (let i = 0; i < totalMonths; i++) {
         const dueDate = new Date(disbursed.disbursedAt!);
         dueDate.setMonth(dueDate.getMonth() + i + 1);
 
         /**
          * now the interest for this
-         * months is based on 
+         * months is based on
          * on the remaining debt
          */
         let interestForMonth = remainingBalance * monthlyRate;
-        interestForMonth =  Math.round(interestForMonth * 100) / 100;
+        interestForMonth = Math.round(interestForMonth * 100) / 100;
 
         //principal for this month is the rest of the payment
         let principalForMonth = monthlyPayment - interestForMonth;
@@ -344,10 +344,35 @@ export class LoansService {
          * handle any
          * minor rounding errors
          */
+        if (i === totalMonths - 1) {
+          principalForMonth = remainingBalance;
+          interestForMonth =
+            Math.round((monthlyPayment - principalForMonth) * 100) / 100;
+        }
+
+        scheduleRows.push({
+          loanId: disbursed.id,
+          installmentNumber: i + 1,
+          dueDate: dueDate,
+          principalAmount: principalForMonth,
+          interestAmount: interestForMonth,
+          totalAmount:
+            Math.round((principalForMonth + interestForMonth) * 100) / 100,
+          remainingBalance: Math.max(
+            0,
+            Math.round((remainingBalance - principalForMonth) * 100) / 100,
+          ),
+          status: 'PENDING',
+        });
+        // Reduce the balance for the next loop cycle
+        remainingBalance -= principalForMonth;
       }
 
-    
-    
+      // 5. Save the complete amortization schedule to the database
+      await tx.paymentSchedule.createMany({
+          data: scheduleRows
+        });
+
       return disbursed;
     })
    

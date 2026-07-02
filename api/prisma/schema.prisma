@@ -71,16 +71,20 @@ model Loan {
 }
 
 model RepaymentSchedule {
-  id           String    @id @default(uuid())
-  loanId       String    @map("loan_id")
-  dueDate      DateTime  @map("due_date")
-  amountDue    Decimal   @map("amount_due") @db.Decimal(15, 2)
-  amountPaid   Decimal   @default(0) @map("amount_paid") @db.Decimal(15, 2)
-  penalty      Decimal   @default(0) @db.Decimal(15, 2)
-  status       String    @default("PENDING")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id                 String   @id @default(uuid())
+  loanId             String   @map("loan_id")
+  installmentNumber  Int      @map("installment_number")
+  dueDate            DateTime @map("due_date")
+  principalAmount    Decimal  @map("principal_amount") @db.Decimal(15, 2)
+  interestAmount     Decimal  @map("interest_amount") @db.Decimal(15, 2)
+  amountDue          Decimal  @map("amount_due") @db.Decimal(15, 2)
+  amountPaid         Decimal  @default(0) @map("amount_paid") @db.Decimal(15, 2)
+  remainingBalance   Decimal  @map("remaining_balance") @db.Decimal(15, 2)
+  penalty            Decimal  @default(0) @db.Decimal(15, 2)
+  status             String   @default("PENDING")
+  createdAt          DateTime @default(now()) @map("created_at")
 
-  loan         Loan      @relation(fields: [loanId], references: [id])
+  loan               Loan     @relation(fields: [loanId], references: [id])
 
   @@map("repayment_schedules")
 }
