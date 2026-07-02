@@ -322,29 +322,31 @@ export class LoansService {
        * by tracking the shrinking balance
        */
       const scheduleRows = [];
+      let remainingBalance = principal;
 
-
-      const principalPerMonth = approvedLoan.amount.toNumber() /
-      approvedLoan.termMonths;
-
-
-      /**
-       * now calculating the monthly payment
-       * principal + monthlyPay = x + 3333.3
-       */
-      const monthlyPayment = principalPerMonth + monthlyInterest;
-
-
-      /**
-       * now to generate one row for every month
-       */
-      const scheduleRows =  Array.from({
-        length: approvedLoan.termMonths
-      },
-      (_, i) => {
+      for(let i = 0; i < totalMonths; i++) {
         const dueDate = new Date(disbursed.disbursedAt!);
-        dueDate.setMonth(dueDate.getMonth() + i + 1)
-      })
+        dueDate.setMonth(dueDate.getMonth() + i + 1);
+
+        /**
+         * now the interest for this
+         * months is based on 
+         * on the remaining debt
+         */
+        let interestForMonth = remainingBalance * monthlyRate;
+        interestForMonth =  Math.round(interestForMonth * 100) / 100;
+
+        //principal for this month is the rest of the payment
+        let principalForMonth = monthlyPayment - interestForMonth;
+        principalForMonth = Math.round(principalForMonth * 100) / 100;
+
+        /**
+         * handle any
+         * minor rounding errors
+         */
+      }
+
+    
     
       return disbursed;
     })
