@@ -296,8 +296,10 @@ export class LoansService {
        * suppose the loan is 12000, and IR= 12% the math 
        * will be (12000 * (12/100))/ and dived by 12 since its every month
        */
-      const monthlyInterest = approvedLoan.amount.toNumber() * 
-      (approvedLoan.interestRate.toNumber() / 100) /12;
+      const principal = approvedLoan.amount.toNumber();
+      const annualRate = approvedLoan.interestRate.toNumber() /100;
+      const monthlyRate = annualRate / 12;
+      const totalMonths = approvedLoan.termMonths;
       
       /**
        * now calculating the pricipal
