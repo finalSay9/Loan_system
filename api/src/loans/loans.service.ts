@@ -305,7 +305,12 @@ export class LoansService {
        */
       let monthlyPayment =  0;
       if(monthlyRate == 0) {
-        
+        //Edge case: 0% interest loan 
+        monthlyPayment = principal / totalMonths;
+      } else {
+        monthlyPayment =
+          (principal * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths))) /
+          (Math.pow(1 + monthlyRate, totalMonths) - 1);
       }
 
 
