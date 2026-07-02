@@ -51,17 +51,20 @@ model User {
 }
 
 model Loan {
-  id           String     @id @default(uuid())
-  userId       String     @map("user_id")
-  amount       Decimal    @db.Decimal(15, 2)
-  purpose      String
-  status       LoanStatus @default(PENDING)
-  interestRate Decimal    @map("interest_rate") @db.Decimal(5, 2)
-  termMonths   Int        @map("term_months")
-  version      Int        @default(0) // optimistic locking
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  deletedAt    DateTime?  @map("deleted_at")
+  id              String     @id @default(uuid())
+  userId          String     @map("user_id")
+  amount          Decimal    @db.Decimal(15, 2)
+  purpose         String
+  notes           String?
+  status          LoanStatus @default(PENDING)
+  interestRate    Decimal    @default(24.00) @map("interest_rate") @db.Decimal(5, 2)
+  termMonths      Int        @map("term_months")
+  rejectionReason String?    @map("rejection_reason")
+  disbursedAt     DateTime?  @map("disbursed_at") // ← add this
+  version         Int        @default(0)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  deletedAt       DateTime?  @map("deleted_at")
 
   user         User                @relation(fields: [userId], references: [id])
   repayments   RepaymentSchedule[]
@@ -71,14 +74,18 @@ model Loan {
 }
 
 model RepaymentSchedule {
-  id         String   @id @default(uuid())
-  loanId     String   @map("loan_id")
-  dueDate    DateTime @map("due_date")
-  amountDue  Decimal  @map("amount_due") @db.Decimal(15, 2)
-  amountPaid Decimal  @default(0) @map("amount_paid") @db.Decimal(15, 2)
-  penalty    Decimal  @default(0) @db.Decimal(15, 2)
-  status     String   @default("PENDING")
-  createdAt  DateTime @default(now()) @map("created_at")
+  id                String   @id @default(uuid())
+  loanId            String   @map("loan_id")
+  installmentNumber Int      @map("installment_number")
+  dueDate           DateTime @map("due_date")
+  principalAmount   Decimal  @map("principal_amount") @db.Decimal(15, 2)
+  interestAmount    Decimal  @map("interest_amount") @db.Decimal(15, 2)
+  amountDue         Decimal  @map("amount_due") @db.Decimal(15, 2)
+  amountPaid        Decimal  @default(0) @map("amount_paid") @db.Decimal(15, 2)
+  remainingBalance  Decimal  @map("remaining_balance") @db.Decimal(15, 2)
+  penalty           Decimal  @default(0) @db.Decimal(15, 2)
+  status            String   @default("PENDING")
+  createdAt         DateTime @default(now()) @map("created_at")
 
   loan Loan @relation(fields: [loanId], references: [id])
 

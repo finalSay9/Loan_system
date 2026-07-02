@@ -51,21 +51,24 @@ model User {
 }
 
 model Loan {
-  id            String     @id @default(uuid())
-  userId        String     @map("user_id")
-  amount        Decimal    @db.Decimal(15, 2)
-  purpose       String
-  status        LoanStatus @default(PENDING)
-  interestRate  Decimal    @map("interest_rate") @db.Decimal(5, 2)
-  termMonths    Int        @map("term_months")
-  version       Int        @default(0)  // optimistic locking
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
-  deletedAt     DateTime?  @map("deleted_at")
+  id              String     @id @default(uuid())
+  userId          String     @map("user_id")
+  amount          Decimal    @db.Decimal(15, 2)
+  purpose         String
+  notes           String?
+  status          LoanStatus @default(PENDING)
+  interestRate    Decimal    @default(24.00) @map("interest_rate") @db.Decimal(5, 2)
+  termMonths      Int        @map("term_months")
+  rejectionReason String?    @map("rejection_reason")
+  disbursedAt     DateTime?  @map("disbursed_at")   // ← add this
+  version         Int        @default(0)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  deletedAt       DateTime?  @map("deleted_at")
 
-  user          User       @relation(fields: [userId], references: [id])
-  repayments    RepaymentSchedule[]
-  transactions  Transaction[]
+  user         User                @relation(fields: [userId], references: [id])
+  repayments   RepaymentSchedule[]
+  transactions Transaction[]
 
   @@map("loans")
 }

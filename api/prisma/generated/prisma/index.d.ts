@@ -2583,9 +2583,12 @@ export namespace Prisma {
     userId: string | null
     amount: Decimal | null
     purpose: string | null
+    notes: string | null
     status: $Enums.LoanStatus | null
     interestRate: Decimal | null
     termMonths: number | null
+    rejectionReason: string | null
+    disbursedAt: Date | null
     version: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -2597,9 +2600,12 @@ export namespace Prisma {
     userId: string | null
     amount: Decimal | null
     purpose: string | null
+    notes: string | null
     status: $Enums.LoanStatus | null
     interestRate: Decimal | null
     termMonths: number | null
+    rejectionReason: string | null
+    disbursedAt: Date | null
     version: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -2611,9 +2617,12 @@ export namespace Prisma {
     userId: number
     amount: number
     purpose: number
+    notes: number
     status: number
     interestRate: number
     termMonths: number
+    rejectionReason: number
+    disbursedAt: number
     version: number
     createdAt: number
     updatedAt: number
@@ -2641,9 +2650,12 @@ export namespace Prisma {
     userId?: true
     amount?: true
     purpose?: true
+    notes?: true
     status?: true
     interestRate?: true
     termMonths?: true
+    rejectionReason?: true
+    disbursedAt?: true
     version?: true
     createdAt?: true
     updatedAt?: true
@@ -2655,9 +2667,12 @@ export namespace Prisma {
     userId?: true
     amount?: true
     purpose?: true
+    notes?: true
     status?: true
     interestRate?: true
     termMonths?: true
+    rejectionReason?: true
+    disbursedAt?: true
     version?: true
     createdAt?: true
     updatedAt?: true
@@ -2669,9 +2684,12 @@ export namespace Prisma {
     userId?: true
     amount?: true
     purpose?: true
+    notes?: true
     status?: true
     interestRate?: true
     termMonths?: true
+    rejectionReason?: true
+    disbursedAt?: true
     version?: true
     createdAt?: true
     updatedAt?: true
@@ -2770,9 +2788,12 @@ export namespace Prisma {
     userId: string
     amount: Decimal
     purpose: string
+    notes: string | null
     status: $Enums.LoanStatus
     interestRate: Decimal
     termMonths: number
+    rejectionReason: string | null
+    disbursedAt: Date | null
     version: number
     createdAt: Date
     updatedAt: Date
@@ -2803,9 +2824,12 @@ export namespace Prisma {
     userId?: boolean
     amount?: boolean
     purpose?: boolean
+    notes?: boolean
     status?: boolean
     interestRate?: boolean
     termMonths?: boolean
+    rejectionReason?: boolean
+    disbursedAt?: boolean
     version?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -2821,9 +2845,12 @@ export namespace Prisma {
     userId?: boolean
     amount?: boolean
     purpose?: boolean
+    notes?: boolean
     status?: boolean
     interestRate?: boolean
     termMonths?: boolean
+    rejectionReason?: boolean
+    disbursedAt?: boolean
     version?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -2836,9 +2863,12 @@ export namespace Prisma {
     userId?: boolean
     amount?: boolean
     purpose?: boolean
+    notes?: boolean
     status?: boolean
     interestRate?: boolean
     termMonths?: boolean
+    rejectionReason?: boolean
+    disbursedAt?: boolean
     version?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -2851,16 +2881,19 @@ export namespace Prisma {
     userId?: boolean
     amount?: boolean
     purpose?: boolean
+    notes?: boolean
     status?: boolean
     interestRate?: boolean
     termMonths?: boolean
+    rejectionReason?: boolean
+    disbursedAt?: boolean
     version?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
   }
 
-  export type LoanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "amount" | "purpose" | "status" | "interestRate" | "termMonths" | "version" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["loan"]>
+  export type LoanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "amount" | "purpose" | "notes" | "status" | "interestRate" | "termMonths" | "rejectionReason" | "disbursedAt" | "version" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["loan"]>
   export type LoanInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     repayments?: boolean | Loan$repaymentsArgs<ExtArgs>
@@ -2886,9 +2919,12 @@ export namespace Prisma {
       userId: string
       amount: Prisma.Decimal
       purpose: string
+      notes: string | null
       status: $Enums.LoanStatus
       interestRate: Prisma.Decimal
       termMonths: number
+      rejectionReason: string | null
+      disbursedAt: Date | null
       version: number
       createdAt: Date
       updatedAt: Date
@@ -3323,9 +3359,12 @@ export namespace Prisma {
     readonly userId: FieldRef<"Loan", 'String'>
     readonly amount: FieldRef<"Loan", 'Decimal'>
     readonly purpose: FieldRef<"Loan", 'String'>
+    readonly notes: FieldRef<"Loan", 'String'>
     readonly status: FieldRef<"Loan", 'LoanStatus'>
     readonly interestRate: FieldRef<"Loan", 'Decimal'>
     readonly termMonths: FieldRef<"Loan", 'Int'>
+    readonly rejectionReason: FieldRef<"Loan", 'String'>
+    readonly disbursedAt: FieldRef<"Loan", 'DateTime'>
     readonly version: FieldRef<"Loan", 'Int'>
     readonly createdAt: FieldRef<"Loan", 'DateTime'>
     readonly updatedAt: FieldRef<"Loan", 'DateTime'>
@@ -3810,23 +3849,35 @@ export namespace Prisma {
   }
 
   export type RepaymentScheduleAvgAggregateOutputType = {
+    installmentNumber: number | null
+    principalAmount: Decimal | null
+    interestAmount: Decimal | null
     amountDue: Decimal | null
     amountPaid: Decimal | null
+    remainingBalance: Decimal | null
     penalty: Decimal | null
   }
 
   export type RepaymentScheduleSumAggregateOutputType = {
+    installmentNumber: number | null
+    principalAmount: Decimal | null
+    interestAmount: Decimal | null
     amountDue: Decimal | null
     amountPaid: Decimal | null
+    remainingBalance: Decimal | null
     penalty: Decimal | null
   }
 
   export type RepaymentScheduleMinAggregateOutputType = {
     id: string | null
     loanId: string | null
+    installmentNumber: number | null
     dueDate: Date | null
+    principalAmount: Decimal | null
+    interestAmount: Decimal | null
     amountDue: Decimal | null
     amountPaid: Decimal | null
+    remainingBalance: Decimal | null
     penalty: Decimal | null
     status: string | null
     createdAt: Date | null
@@ -3835,9 +3886,13 @@ export namespace Prisma {
   export type RepaymentScheduleMaxAggregateOutputType = {
     id: string | null
     loanId: string | null
+    installmentNumber: number | null
     dueDate: Date | null
+    principalAmount: Decimal | null
+    interestAmount: Decimal | null
     amountDue: Decimal | null
     amountPaid: Decimal | null
+    remainingBalance: Decimal | null
     penalty: Decimal | null
     status: string | null
     createdAt: Date | null
@@ -3846,9 +3901,13 @@ export namespace Prisma {
   export type RepaymentScheduleCountAggregateOutputType = {
     id: number
     loanId: number
+    installmentNumber: number
     dueDate: number
+    principalAmount: number
+    interestAmount: number
     amountDue: number
     amountPaid: number
+    remainingBalance: number
     penalty: number
     status: number
     createdAt: number
@@ -3857,23 +3916,35 @@ export namespace Prisma {
 
 
   export type RepaymentScheduleAvgAggregateInputType = {
+    installmentNumber?: true
+    principalAmount?: true
+    interestAmount?: true
     amountDue?: true
     amountPaid?: true
+    remainingBalance?: true
     penalty?: true
   }
 
   export type RepaymentScheduleSumAggregateInputType = {
+    installmentNumber?: true
+    principalAmount?: true
+    interestAmount?: true
     amountDue?: true
     amountPaid?: true
+    remainingBalance?: true
     penalty?: true
   }
 
   export type RepaymentScheduleMinAggregateInputType = {
     id?: true
     loanId?: true
+    installmentNumber?: true
     dueDate?: true
+    principalAmount?: true
+    interestAmount?: true
     amountDue?: true
     amountPaid?: true
+    remainingBalance?: true
     penalty?: true
     status?: true
     createdAt?: true
@@ -3882,9 +3953,13 @@ export namespace Prisma {
   export type RepaymentScheduleMaxAggregateInputType = {
     id?: true
     loanId?: true
+    installmentNumber?: true
     dueDate?: true
+    principalAmount?: true
+    interestAmount?: true
     amountDue?: true
     amountPaid?: true
+    remainingBalance?: true
     penalty?: true
     status?: true
     createdAt?: true
@@ -3893,9 +3968,13 @@ export namespace Prisma {
   export type RepaymentScheduleCountAggregateInputType = {
     id?: true
     loanId?: true
+    installmentNumber?: true
     dueDate?: true
+    principalAmount?: true
+    interestAmount?: true
     amountDue?: true
     amountPaid?: true
+    remainingBalance?: true
     penalty?: true
     status?: true
     createdAt?: true
@@ -3991,9 +4070,13 @@ export namespace Prisma {
   export type RepaymentScheduleGroupByOutputType = {
     id: string
     loanId: string
+    installmentNumber: number
     dueDate: Date
+    principalAmount: Decimal
+    interestAmount: Decimal
     amountDue: Decimal
     amountPaid: Decimal
+    remainingBalance: Decimal
     penalty: Decimal
     status: string
     createdAt: Date
@@ -4021,9 +4104,13 @@ export namespace Prisma {
   export type RepaymentScheduleSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     loanId?: boolean
+    installmentNumber?: boolean
     dueDate?: boolean
+    principalAmount?: boolean
+    interestAmount?: boolean
     amountDue?: boolean
     amountPaid?: boolean
+    remainingBalance?: boolean
     penalty?: boolean
     status?: boolean
     createdAt?: boolean
@@ -4033,9 +4120,13 @@ export namespace Prisma {
   export type RepaymentScheduleSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     loanId?: boolean
+    installmentNumber?: boolean
     dueDate?: boolean
+    principalAmount?: boolean
+    interestAmount?: boolean
     amountDue?: boolean
     amountPaid?: boolean
+    remainingBalance?: boolean
     penalty?: boolean
     status?: boolean
     createdAt?: boolean
@@ -4045,9 +4136,13 @@ export namespace Prisma {
   export type RepaymentScheduleSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     loanId?: boolean
+    installmentNumber?: boolean
     dueDate?: boolean
+    principalAmount?: boolean
+    interestAmount?: boolean
     amountDue?: boolean
     amountPaid?: boolean
+    remainingBalance?: boolean
     penalty?: boolean
     status?: boolean
     createdAt?: boolean
@@ -4057,15 +4152,19 @@ export namespace Prisma {
   export type RepaymentScheduleSelectScalar = {
     id?: boolean
     loanId?: boolean
+    installmentNumber?: boolean
     dueDate?: boolean
+    principalAmount?: boolean
+    interestAmount?: boolean
     amountDue?: boolean
     amountPaid?: boolean
+    remainingBalance?: boolean
     penalty?: boolean
     status?: boolean
     createdAt?: boolean
   }
 
-  export type RepaymentScheduleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "loanId" | "dueDate" | "amountDue" | "amountPaid" | "penalty" | "status" | "createdAt", ExtArgs["result"]["repaymentSchedule"]>
+  export type RepaymentScheduleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "loanId" | "installmentNumber" | "dueDate" | "principalAmount" | "interestAmount" | "amountDue" | "amountPaid" | "remainingBalance" | "penalty" | "status" | "createdAt", ExtArgs["result"]["repaymentSchedule"]>
   export type RepaymentScheduleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     loan?: boolean | LoanDefaultArgs<ExtArgs>
   }
@@ -4084,9 +4183,13 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       loanId: string
+      installmentNumber: number
       dueDate: Date
+      principalAmount: Prisma.Decimal
+      interestAmount: Prisma.Decimal
       amountDue: Prisma.Decimal
       amountPaid: Prisma.Decimal
+      remainingBalance: Prisma.Decimal
       penalty: Prisma.Decimal
       status: string
       createdAt: Date
@@ -4516,9 +4619,13 @@ export namespace Prisma {
   interface RepaymentScheduleFieldRefs {
     readonly id: FieldRef<"RepaymentSchedule", 'String'>
     readonly loanId: FieldRef<"RepaymentSchedule", 'String'>
+    readonly installmentNumber: FieldRef<"RepaymentSchedule", 'Int'>
     readonly dueDate: FieldRef<"RepaymentSchedule", 'DateTime'>
+    readonly principalAmount: FieldRef<"RepaymentSchedule", 'Decimal'>
+    readonly interestAmount: FieldRef<"RepaymentSchedule", 'Decimal'>
     readonly amountDue: FieldRef<"RepaymentSchedule", 'Decimal'>
     readonly amountPaid: FieldRef<"RepaymentSchedule", 'Decimal'>
+    readonly remainingBalance: FieldRef<"RepaymentSchedule", 'Decimal'>
     readonly penalty: FieldRef<"RepaymentSchedule", 'Decimal'>
     readonly status: FieldRef<"RepaymentSchedule", 'String'>
     readonly createdAt: FieldRef<"RepaymentSchedule", 'DateTime'>
@@ -7208,9 +7315,12 @@ export namespace Prisma {
     userId: 'userId',
     amount: 'amount',
     purpose: 'purpose',
+    notes: 'notes',
     status: 'status',
     interestRate: 'interestRate',
     termMonths: 'termMonths',
+    rejectionReason: 'rejectionReason',
+    disbursedAt: 'disbursedAt',
     version: 'version',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
@@ -7223,9 +7333,13 @@ export namespace Prisma {
   export const RepaymentScheduleScalarFieldEnum: {
     id: 'id',
     loanId: 'loanId',
+    installmentNumber: 'installmentNumber',
     dueDate: 'dueDate',
+    principalAmount: 'principalAmount',
+    interestAmount: 'interestAmount',
     amountDue: 'amountDue',
     amountPaid: 'amountPaid',
+    remainingBalance: 'remainingBalance',
     penalty: 'penalty',
     status: 'status',
     createdAt: 'createdAt'
@@ -7538,9 +7652,12 @@ export namespace Prisma {
     userId?: StringFilter<"Loan"> | string
     amount?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     purpose?: StringFilter<"Loan"> | string
+    notes?: StringNullableFilter<"Loan"> | string | null
     status?: EnumLoanStatusFilter<"Loan"> | $Enums.LoanStatus
     interestRate?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     termMonths?: IntFilter<"Loan"> | number
+    rejectionReason?: StringNullableFilter<"Loan"> | string | null
+    disbursedAt?: DateTimeNullableFilter<"Loan"> | Date | string | null
     version?: IntFilter<"Loan"> | number
     createdAt?: DateTimeFilter<"Loan"> | Date | string
     updatedAt?: DateTimeFilter<"Loan"> | Date | string
@@ -7555,9 +7672,12 @@ export namespace Prisma {
     userId?: SortOrder
     amount?: SortOrder
     purpose?: SortOrder
+    notes?: SortOrderInput | SortOrder
     status?: SortOrder
     interestRate?: SortOrder
     termMonths?: SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    disbursedAt?: SortOrderInput | SortOrder
     version?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -7575,9 +7695,12 @@ export namespace Prisma {
     userId?: StringFilter<"Loan"> | string
     amount?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     purpose?: StringFilter<"Loan"> | string
+    notes?: StringNullableFilter<"Loan"> | string | null
     status?: EnumLoanStatusFilter<"Loan"> | $Enums.LoanStatus
     interestRate?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     termMonths?: IntFilter<"Loan"> | number
+    rejectionReason?: StringNullableFilter<"Loan"> | string | null
+    disbursedAt?: DateTimeNullableFilter<"Loan"> | Date | string | null
     version?: IntFilter<"Loan"> | number
     createdAt?: DateTimeFilter<"Loan"> | Date | string
     updatedAt?: DateTimeFilter<"Loan"> | Date | string
@@ -7592,9 +7715,12 @@ export namespace Prisma {
     userId?: SortOrder
     amount?: SortOrder
     purpose?: SortOrder
+    notes?: SortOrderInput | SortOrder
     status?: SortOrder
     interestRate?: SortOrder
     termMonths?: SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    disbursedAt?: SortOrderInput | SortOrder
     version?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -7614,9 +7740,12 @@ export namespace Prisma {
     userId?: StringWithAggregatesFilter<"Loan"> | string
     amount?: DecimalWithAggregatesFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     purpose?: StringWithAggregatesFilter<"Loan"> | string
+    notes?: StringNullableWithAggregatesFilter<"Loan"> | string | null
     status?: EnumLoanStatusWithAggregatesFilter<"Loan"> | $Enums.LoanStatus
     interestRate?: DecimalWithAggregatesFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     termMonths?: IntWithAggregatesFilter<"Loan"> | number
+    rejectionReason?: StringNullableWithAggregatesFilter<"Loan"> | string | null
+    disbursedAt?: DateTimeNullableWithAggregatesFilter<"Loan"> | Date | string | null
     version?: IntWithAggregatesFilter<"Loan"> | number
     createdAt?: DateTimeWithAggregatesFilter<"Loan"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Loan"> | Date | string
@@ -7629,9 +7758,13 @@ export namespace Prisma {
     NOT?: RepaymentScheduleWhereInput | RepaymentScheduleWhereInput[]
     id?: StringFilter<"RepaymentSchedule"> | string
     loanId?: StringFilter<"RepaymentSchedule"> | string
+    installmentNumber?: IntFilter<"RepaymentSchedule"> | number
     dueDate?: DateTimeFilter<"RepaymentSchedule"> | Date | string
+    principalAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     penalty?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     status?: StringFilter<"RepaymentSchedule"> | string
     createdAt?: DateTimeFilter<"RepaymentSchedule"> | Date | string
@@ -7641,9 +7774,13 @@ export namespace Prisma {
   export type RepaymentScheduleOrderByWithRelationInput = {
     id?: SortOrder
     loanId?: SortOrder
+    installmentNumber?: SortOrder
     dueDate?: SortOrder
+    principalAmount?: SortOrder
+    interestAmount?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
+    remainingBalance?: SortOrder
     penalty?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -7656,9 +7793,13 @@ export namespace Prisma {
     OR?: RepaymentScheduleWhereInput[]
     NOT?: RepaymentScheduleWhereInput | RepaymentScheduleWhereInput[]
     loanId?: StringFilter<"RepaymentSchedule"> | string
+    installmentNumber?: IntFilter<"RepaymentSchedule"> | number
     dueDate?: DateTimeFilter<"RepaymentSchedule"> | Date | string
+    principalAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     penalty?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     status?: StringFilter<"RepaymentSchedule"> | string
     createdAt?: DateTimeFilter<"RepaymentSchedule"> | Date | string
@@ -7668,9 +7809,13 @@ export namespace Prisma {
   export type RepaymentScheduleOrderByWithAggregationInput = {
     id?: SortOrder
     loanId?: SortOrder
+    installmentNumber?: SortOrder
     dueDate?: SortOrder
+    principalAmount?: SortOrder
+    interestAmount?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
+    remainingBalance?: SortOrder
     penalty?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -7687,9 +7832,13 @@ export namespace Prisma {
     NOT?: RepaymentScheduleScalarWhereWithAggregatesInput | RepaymentScheduleScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"RepaymentSchedule"> | string
     loanId?: StringWithAggregatesFilter<"RepaymentSchedule"> | string
+    installmentNumber?: IntWithAggregatesFilter<"RepaymentSchedule"> | number
     dueDate?: DateTimeWithAggregatesFilter<"RepaymentSchedule"> | Date | string
+    principalAmount?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     penalty?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     status?: StringWithAggregatesFilter<"RepaymentSchedule"> | string
     createdAt?: DateTimeWithAggregatesFilter<"RepaymentSchedule"> | Date | string
@@ -7954,9 +8103,12 @@ export namespace Prisma {
     id?: string
     amount: Decimal | DecimalJsLike | number | string
     purpose: string
+    notes?: string | null
     status?: $Enums.LoanStatus
-    interestRate: Decimal | DecimalJsLike | number | string
+    interestRate?: Decimal | DecimalJsLike | number | string
     termMonths: number
+    rejectionReason?: string | null
+    disbursedAt?: Date | string | null
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -7971,9 +8123,12 @@ export namespace Prisma {
     userId: string
     amount: Decimal | DecimalJsLike | number | string
     purpose: string
+    notes?: string | null
     status?: $Enums.LoanStatus
-    interestRate: Decimal | DecimalJsLike | number | string
+    interestRate?: Decimal | DecimalJsLike | number | string
     termMonths: number
+    rejectionReason?: string | null
+    disbursedAt?: Date | string | null
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -7986,9 +8141,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8003,9 +8161,12 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8019,9 +8180,12 @@ export namespace Prisma {
     userId: string
     amount: Decimal | DecimalJsLike | number | string
     purpose: string
+    notes?: string | null
     status?: $Enums.LoanStatus
-    interestRate: Decimal | DecimalJsLike | number | string
+    interestRate?: Decimal | DecimalJsLike | number | string
     termMonths: number
+    rejectionReason?: string | null
+    disbursedAt?: Date | string | null
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -8032,9 +8196,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8046,9 +8213,12 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8057,9 +8227,13 @@ export namespace Prisma {
 
   export type RepaymentScheduleCreateInput = {
     id?: string
+    installmentNumber: number
     dueDate: Date | string
+    principalAmount: Decimal | DecimalJsLike | number | string
+    interestAmount: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
+    remainingBalance: Decimal | DecimalJsLike | number | string
     penalty?: Decimal | DecimalJsLike | number | string
     status?: string
     createdAt?: Date | string
@@ -8069,9 +8243,13 @@ export namespace Prisma {
   export type RepaymentScheduleUncheckedCreateInput = {
     id?: string
     loanId: string
+    installmentNumber: number
     dueDate: Date | string
+    principalAmount: Decimal | DecimalJsLike | number | string
+    interestAmount: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
+    remainingBalance: Decimal | DecimalJsLike | number | string
     penalty?: Decimal | DecimalJsLike | number | string
     status?: string
     createdAt?: Date | string
@@ -8079,9 +8257,13 @@ export namespace Prisma {
 
   export type RepaymentScheduleUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    installmentNumber?: IntFieldUpdateOperationsInput | number
     dueDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    principalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penalty?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8091,9 +8273,13 @@ export namespace Prisma {
   export type RepaymentScheduleUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     loanId?: StringFieldUpdateOperationsInput | string
+    installmentNumber?: IntFieldUpdateOperationsInput | number
     dueDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    principalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penalty?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8102,9 +8288,13 @@ export namespace Prisma {
   export type RepaymentScheduleCreateManyInput = {
     id?: string
     loanId: string
+    installmentNumber: number
     dueDate: Date | string
+    principalAmount: Decimal | DecimalJsLike | number | string
+    interestAmount: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
+    remainingBalance: Decimal | DecimalJsLike | number | string
     penalty?: Decimal | DecimalJsLike | number | string
     status?: string
     createdAt?: Date | string
@@ -8112,9 +8302,13 @@ export namespace Prisma {
 
   export type RepaymentScheduleUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
+    installmentNumber?: IntFieldUpdateOperationsInput | number
     dueDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    principalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penalty?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8123,9 +8317,13 @@ export namespace Prisma {
   export type RepaymentScheduleUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     loanId?: StringFieldUpdateOperationsInput | string
+    installmentNumber?: IntFieldUpdateOperationsInput | number
     dueDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    principalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penalty?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8562,9 +8760,12 @@ export namespace Prisma {
     userId?: SortOrder
     amount?: SortOrder
     purpose?: SortOrder
+    notes?: SortOrder
     status?: SortOrder
     interestRate?: SortOrder
     termMonths?: SortOrder
+    rejectionReason?: SortOrder
+    disbursedAt?: SortOrder
     version?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -8583,9 +8784,12 @@ export namespace Prisma {
     userId?: SortOrder
     amount?: SortOrder
     purpose?: SortOrder
+    notes?: SortOrder
     status?: SortOrder
     interestRate?: SortOrder
     termMonths?: SortOrder
+    rejectionReason?: SortOrder
+    disbursedAt?: SortOrder
     version?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -8597,9 +8801,12 @@ export namespace Prisma {
     userId?: SortOrder
     amount?: SortOrder
     purpose?: SortOrder
+    notes?: SortOrder
     status?: SortOrder
     interestRate?: SortOrder
     termMonths?: SortOrder
+    rejectionReason?: SortOrder
+    disbursedAt?: SortOrder
     version?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -8663,26 +8870,38 @@ export namespace Prisma {
   export type RepaymentScheduleCountOrderByAggregateInput = {
     id?: SortOrder
     loanId?: SortOrder
+    installmentNumber?: SortOrder
     dueDate?: SortOrder
+    principalAmount?: SortOrder
+    interestAmount?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
+    remainingBalance?: SortOrder
     penalty?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
   }
 
   export type RepaymentScheduleAvgOrderByAggregateInput = {
+    installmentNumber?: SortOrder
+    principalAmount?: SortOrder
+    interestAmount?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
+    remainingBalance?: SortOrder
     penalty?: SortOrder
   }
 
   export type RepaymentScheduleMaxOrderByAggregateInput = {
     id?: SortOrder
     loanId?: SortOrder
+    installmentNumber?: SortOrder
     dueDate?: SortOrder
+    principalAmount?: SortOrder
+    interestAmount?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
+    remainingBalance?: SortOrder
     penalty?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -8691,17 +8910,25 @@ export namespace Prisma {
   export type RepaymentScheduleMinOrderByAggregateInput = {
     id?: SortOrder
     loanId?: SortOrder
+    installmentNumber?: SortOrder
     dueDate?: SortOrder
+    principalAmount?: SortOrder
+    interestAmount?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
+    remainingBalance?: SortOrder
     penalty?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
   }
 
   export type RepaymentScheduleSumOrderByAggregateInput = {
+    installmentNumber?: SortOrder
+    principalAmount?: SortOrder
+    interestAmount?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
+    remainingBalance?: SortOrder
     penalty?: SortOrder
   }
 
@@ -9358,9 +9585,12 @@ export namespace Prisma {
     id?: string
     amount: Decimal | DecimalJsLike | number | string
     purpose: string
+    notes?: string | null
     status?: $Enums.LoanStatus
-    interestRate: Decimal | DecimalJsLike | number | string
+    interestRate?: Decimal | DecimalJsLike | number | string
     termMonths: number
+    rejectionReason?: string | null
+    disbursedAt?: Date | string | null
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9373,9 +9603,12 @@ export namespace Prisma {
     id?: string
     amount: Decimal | DecimalJsLike | number | string
     purpose: string
+    notes?: string | null
     status?: $Enums.LoanStatus
-    interestRate: Decimal | DecimalJsLike | number | string
+    interestRate?: Decimal | DecimalJsLike | number | string
     termMonths: number
+    rejectionReason?: string | null
+    disbursedAt?: Date | string | null
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9450,9 +9683,12 @@ export namespace Prisma {
     userId?: StringFilter<"Loan"> | string
     amount?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     purpose?: StringFilter<"Loan"> | string
+    notes?: StringNullableFilter<"Loan"> | string | null
     status?: EnumLoanStatusFilter<"Loan"> | $Enums.LoanStatus
     interestRate?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     termMonths?: IntFilter<"Loan"> | number
+    rejectionReason?: StringNullableFilter<"Loan"> | string | null
+    disbursedAt?: DateTimeNullableFilter<"Loan"> | Date | string | null
     version?: IntFilter<"Loan"> | number
     createdAt?: DateTimeFilter<"Loan"> | Date | string
     updatedAt?: DateTimeFilter<"Loan"> | Date | string
@@ -9529,9 +9765,13 @@ export namespace Prisma {
 
   export type RepaymentScheduleCreateWithoutLoanInput = {
     id?: string
+    installmentNumber: number
     dueDate: Date | string
+    principalAmount: Decimal | DecimalJsLike | number | string
+    interestAmount: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
+    remainingBalance: Decimal | DecimalJsLike | number | string
     penalty?: Decimal | DecimalJsLike | number | string
     status?: string
     createdAt?: Date | string
@@ -9539,9 +9779,13 @@ export namespace Prisma {
 
   export type RepaymentScheduleUncheckedCreateWithoutLoanInput = {
     id?: string
+    installmentNumber: number
     dueDate: Date | string
+    principalAmount: Decimal | DecimalJsLike | number | string
+    interestAmount: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
+    remainingBalance: Decimal | DecimalJsLike | number | string
     penalty?: Decimal | DecimalJsLike | number | string
     status?: string
     createdAt?: Date | string
@@ -9650,9 +9894,13 @@ export namespace Prisma {
     NOT?: RepaymentScheduleScalarWhereInput | RepaymentScheduleScalarWhereInput[]
     id?: StringFilter<"RepaymentSchedule"> | string
     loanId?: StringFilter<"RepaymentSchedule"> | string
+    installmentNumber?: IntFilter<"RepaymentSchedule"> | number
     dueDate?: DateTimeFilter<"RepaymentSchedule"> | Date | string
+    principalAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     penalty?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     status?: StringFilter<"RepaymentSchedule"> | string
     createdAt?: DateTimeFilter<"RepaymentSchedule"> | Date | string
@@ -9691,9 +9939,12 @@ export namespace Prisma {
     id?: string
     amount: Decimal | DecimalJsLike | number | string
     purpose: string
+    notes?: string | null
     status?: $Enums.LoanStatus
-    interestRate: Decimal | DecimalJsLike | number | string
+    interestRate?: Decimal | DecimalJsLike | number | string
     termMonths: number
+    rejectionReason?: string | null
+    disbursedAt?: Date | string | null
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9707,9 +9958,12 @@ export namespace Prisma {
     userId: string
     amount: Decimal | DecimalJsLike | number | string
     purpose: string
+    notes?: string | null
     status?: $Enums.LoanStatus
-    interestRate: Decimal | DecimalJsLike | number | string
+    interestRate?: Decimal | DecimalJsLike | number | string
     termMonths: number
+    rejectionReason?: string | null
+    disbursedAt?: Date | string | null
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9737,9 +9991,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9753,9 +10010,12 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9767,9 +10027,12 @@ export namespace Prisma {
     id?: string
     amount: Decimal | DecimalJsLike | number | string
     purpose: string
+    notes?: string | null
     status?: $Enums.LoanStatus
-    interestRate: Decimal | DecimalJsLike | number | string
+    interestRate?: Decimal | DecimalJsLike | number | string
     termMonths: number
+    rejectionReason?: string | null
+    disbursedAt?: Date | string | null
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9783,9 +10046,12 @@ export namespace Prisma {
     userId: string
     amount: Decimal | DecimalJsLike | number | string
     purpose: string
+    notes?: string | null
     status?: $Enums.LoanStatus
-    interestRate: Decimal | DecimalJsLike | number | string
+    interestRate?: Decimal | DecimalJsLike | number | string
     termMonths: number
+    rejectionReason?: string | null
+    disbursedAt?: Date | string | null
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9813,9 +10079,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9829,9 +10098,12 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9923,9 +10195,12 @@ export namespace Prisma {
     id?: string
     amount: Decimal | DecimalJsLike | number | string
     purpose: string
+    notes?: string | null
     status?: $Enums.LoanStatus
-    interestRate: Decimal | DecimalJsLike | number | string
+    interestRate?: Decimal | DecimalJsLike | number | string
     termMonths: number
+    rejectionReason?: string | null
+    disbursedAt?: Date | string | null
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9947,9 +10222,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9962,9 +10240,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9977,9 +10258,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     purpose?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     termMonths?: IntFieldUpdateOperationsInput | number
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    disbursedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10021,9 +10305,13 @@ export namespace Prisma {
 
   export type RepaymentScheduleCreateManyLoanInput = {
     id?: string
+    installmentNumber: number
     dueDate: Date | string
+    principalAmount: Decimal | DecimalJsLike | number | string
+    interestAmount: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
+    remainingBalance: Decimal | DecimalJsLike | number | string
     penalty?: Decimal | DecimalJsLike | number | string
     status?: string
     createdAt?: Date | string
@@ -10040,9 +10328,13 @@ export namespace Prisma {
 
   export type RepaymentScheduleUpdateWithoutLoanInput = {
     id?: StringFieldUpdateOperationsInput | string
+    installmentNumber?: IntFieldUpdateOperationsInput | number
     dueDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    principalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penalty?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10050,9 +10342,13 @@ export namespace Prisma {
 
   export type RepaymentScheduleUncheckedUpdateWithoutLoanInput = {
     id?: StringFieldUpdateOperationsInput | string
+    installmentNumber?: IntFieldUpdateOperationsInput | number
     dueDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    principalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penalty?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10060,9 +10356,13 @@ export namespace Prisma {
 
   export type RepaymentScheduleUncheckedUpdateManyWithoutLoanInput = {
     id?: StringFieldUpdateOperationsInput | string
+    installmentNumber?: IntFieldUpdateOperationsInput | number
     dueDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    principalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penalty?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
