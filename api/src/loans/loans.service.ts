@@ -313,6 +313,16 @@ export class LoansService {
           (Math.pow(1 + monthlyRate, totalMonths) - 1);
       }
 
+      // Rounding to 2 decimal places for money
+      monthlyPayment = Math.round(monthlyPayment * 100) / 100;
+
+      /**
+       * now lets generate the 
+       * schedule rows
+       * by tracking the shrinking balance
+       */
+      const scheduleRows = [];
+
 
       const principalPerMonth = approvedLoan.amount.toNumber() /
       approvedLoan.termMonths;
