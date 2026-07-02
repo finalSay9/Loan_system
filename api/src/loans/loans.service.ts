@@ -300,7 +300,11 @@ export class LoansService {
 
       const scheduleRows =  Array.from({
         length: approvedLoan.termMonths
+      },
+      (_, i => {
+        const dueDate = new Date(disbursed.disbursedAt!)
       })
+    )
 
 
       return disbursed;
