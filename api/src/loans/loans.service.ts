@@ -369,7 +369,7 @@ export class LoansService {
       }
 
       // 5. Save the complete amortization schedule to the database
-      await tx.paymentSchedule.createMany({
+      await tx.repaymentSchedule.createMany({
           data: scheduleRows
         });
 
