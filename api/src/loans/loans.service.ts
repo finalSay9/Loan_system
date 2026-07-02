@@ -298,6 +298,10 @@ export class LoansService {
 
       const monthlyPayment = principalPerMonth + monthlyInterest;
 
+      const scheduleRows =  Array.from({
+        length: approvedLoan.termMonths
+      })
+
 
       return disbursed;
     })
