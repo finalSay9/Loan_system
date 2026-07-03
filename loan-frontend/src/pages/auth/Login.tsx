@@ -22,8 +22,8 @@ export const Login: React.FC = () => {
     return Object.keys(e).length === 0
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (ev: React.FormEvent) => {
+    ev.preventDefault()
     if (!validate()) return
     setLoading(true)
     try {
@@ -39,69 +39,55 @@ export const Login: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1B2D] flex flex-col">
-      {/* Header accent */}
-      <div className="h-1 bg-gradient-to-r from-[#00C9A7] to-[#1890FF]" />
-
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-        {/* Logo */}
-        <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 rounded-xl bg-[#00C9A7] flex items-center justify-center">
-            <span className="text-[#0F1B2D] font-black text-sm">LF</span>
-          </div>
+    <div className="auth-shell">
+      <div className="auth-bar" />
+      <div className="auth-body">
+        <div className="auth-logo">
+          <div className="logo-mark" style={{ width: 40, height: 40, borderRadius: 10 }}><span style={{ fontSize: 13 }}>LF</span></div>
           <div>
-            <p className="font-bold text-[#F0F4F8] text-lg leading-none">LoanFlow</p>
-            <p className="text-xs text-[#8899AA]">Financial Services</p>
+            <div className="logo-name" style={{ fontSize: 18 }}>LoanFlow</div>
+            <div className="logo-sub">Financial Services</div>
           </div>
         </div>
 
-        <div className="w-full max-w-sm">
-          <div className="bg-[#1E2D3D] border border-[#243447] rounded-2xl p-6 animate-fade-in">
-            <h1 className="text-xl font-bold text-[#F0F4F8] mb-1">Sign in</h1>
-            <p className="text-sm text-[#8899AA] mb-6">Enter your registered phone number to continue</p>
+        <div className="auth-card fade-in">
+          <h1 className="font-black mb-1" style={{ fontSize: 22, color: 'var(--text)' }}>Sign in</h1>
+          <p className="text-sm text-silver mb-4">Enter your registered phone number to continue</p>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <Input
-                label="Phone Number"
-                type="tel"
-                placeholder="+265991234567"
-                icon={<Phone size={15} />}
-                value={form.phone}
-                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                error={errors.phone}
-              />
-              <div className="flex flex-col gap-1.5">
-                <div className="relative">
-                  <Input
-                    label="Password"
-                    type={showPw ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    icon={<Lock size={15} />}
-                    value={form.password}
-                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                    error={errors.password}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(p => !p)}
-                    className="absolute right-3 top-[38px] text-[#8899AA] hover:text-[#F0F4F8] transition-colors"
-                  >
-                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                </div>
+          <form onSubmit={handleSubmit} className="flex-col gap-4" style={{ display: 'flex' }}>
+            <Input label="Phone Number" type="tel" placeholder="+265991234567"
+              icon={<Phone size={15} />}
+              value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+              error={errors.phone} />
+
+            <div className="field">
+              <label className="field-label">Password</label>
+              <div className="input-wrap">
+                <span className="input-icon"><Lock size={15} /></span>
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  className={`input input-with-icon ${errors.password ? 'input-error' : ''}`}
+                  style={{ paddingRight: 40 }}
+                  value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                />
+                <button type="button" onClick={() => setShowPw(p => !p)}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
               </div>
+              {errors.password && <span className="field-error">{errors.password}</span>}
+            </div>
 
-              <Button type="submit" loading={loading} className="w-full mt-2" size="lg">
-                Sign in
-              </Button>
-            </form>
-          </div>
-
-          <p className="text-center text-sm text-[#8899AA] mt-6">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-[#00C9A7] hover:underline font-medium">Create one</Link>
-          </p>
+            <Button type="submit" loading={loading} size="lg" style={{ marginTop: 8 }}>Sign in</Button>
+          </form>
         </div>
+
+        <p className="text-sm text-silver" style={{ marginTop: 20, textAlign: 'center' }}>
+          Don't have an account?{' '}
+          <Link to="/register" style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600 }}>Create one</Link>
+        </p>
       </div>
     </div>
   )
