@@ -2,6 +2,7 @@ export type Role = 'BORROWER' | 'LOAN_OFFICER' | 'ACCOUNTANT' | 'COMPLIANCE_OFFI
 export type KycStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 export type LoanStatus = 'PENDING' | 'UNDER_REVIEW' | 'APPROVED' | 'DISBURSED' | 'CLOSED' | 'DEFAULTED'
 
+
 export interface User {
   id: string
   name: string

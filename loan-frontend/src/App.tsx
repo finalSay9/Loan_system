@@ -12,6 +12,7 @@ import { ApplyLoan } from '@/pages/loans/ApplyLoan'
 import { Profile } from '@/pages/profile/Profile'
 import { AdminLoans } from '@/pages/admin/AdminLoans'
 
+
 const qc = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 1000 * 30 } }
 })

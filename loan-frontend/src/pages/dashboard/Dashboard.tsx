@@ -67,7 +67,7 @@ export const Dashboard: React.FC = () => {
             label="Pending Review"
             value={String(pendingLoans)}
             sub="Awaiting officer decision"
-            accent="#FAAD14"
+            accent="#0fbb0a"
             icon={<Clock size={16} />}
           />
         </div>

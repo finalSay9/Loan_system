@@ -13,6 +13,7 @@ export const loginUser = (data: { phone: string; password: string }) =>
 export const getMe = () =>
   api.get<User>('/auth/me').then(r => r.data)
 
+
 // Loans
 export const applyForLoan = (data: {
   amount: number; termMonths: number; purpose: string; notes?: string
