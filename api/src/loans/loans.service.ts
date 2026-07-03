@@ -356,7 +356,7 @@ export class LoansService {
           dueDate: dueDate,
           principalAmount: principalForMonth,
           interestAmount: interestForMonth,
-          totalAmount:
+          amountDue:
             Math.round((principalForMonth + interestForMonth) * 100) / 100,
           remainingBalance: Math.max(
             0,

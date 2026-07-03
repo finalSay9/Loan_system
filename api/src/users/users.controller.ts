@@ -10,7 +10,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   //creating a user
-  @Post('createUser')
+  @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })

@@ -92,7 +92,7 @@ export class LoansController {
 
   //admin looking loan in details  by id
   @UseGuards(JwtAuthGuard)
-  @Get(':id')
+  @Get('my/:id')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting a loan by id' })
   @ApiResponse({ status: 200, description: 'loan retrived successfully' })
