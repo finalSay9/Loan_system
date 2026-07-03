@@ -32,7 +32,7 @@ export class LoansController {
 
   //creating the loans
   @UseGuards(JwtAuthGuard)
-  @Post('applying')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Register a new user' })
@@ -50,7 +50,7 @@ export class LoansController {
    * thier loans
    */
   @UseGuards(JwtAuthGuard)
-  @Get('all')
+  @Get('my')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting loans' })
   @ApiResponse({ status: 200, description: 'loans retrived successfully' })
@@ -68,7 +68,7 @@ export class LoansController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
-  @Get('all-loans')
+  @Get()
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting loans' })
   @ApiResponse({ status: 200, description: 'loans retrived successfully' })
@@ -107,7 +107,7 @@ export class LoansController {
 
   //updating the loan status
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Patch(':id/update_status')
+  @Patch(':id/status')
   @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'getting a loan by id' })
