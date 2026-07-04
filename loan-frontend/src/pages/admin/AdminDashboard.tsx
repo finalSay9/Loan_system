@@ -57,7 +57,7 @@ const AVATAR_COLORS = [
   { bg: "#E6F1FB", color: "#185FA5" },
   { bg: "#EAF3DE", color: "#3B6D11" },
   { bg: "#FAEEDA", color: "#854F0B" },
-  { bg: "#FBEAF0", color: "#993556" },
+  { bg: "#FBEAF0", color: "#e20e55" },
   { bg: "#EEEDFE", color: "#534AB7" },
   { bg: "#E1F5EE", color: "#0F6E56" },
 ];
@@ -105,7 +105,7 @@ export const AdminDashboard: React.FC = () => {
             width: 30,
             height: 30,
             borderRadius: 7,
-            background: "#00C9A7",
+            background: "#044ce7",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -153,11 +153,11 @@ export const AdminDashboard: React.FC = () => {
               gap: 8,
               padding: "8px 10px",
               borderRadius: 7,
-              fontSize: 12,
+              fontSize: 14,
               textDecoration: "none",
               transition: "all .15s",
               color: isActive ? "#00A888" : "var(--text-secondary)",
-              background: isActive ? "rgba(0,201,167,.1)" : "transparent",
+              background: isActive ? "rgba(23, 102, 93, 0.77)" : "transparent",
             })}
           >
             <i
@@ -266,7 +266,7 @@ export const AdminDashboard: React.FC = () => {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                fontSize: 12,
+                fontSize: 23,
                 fontWeight: 500,
                 color: "var(--text-primary)",
                 overflow: "hidden",
@@ -290,19 +290,21 @@ export const AdminDashboard: React.FC = () => {
       style={{
         display: "flex",
         minHeight: "100vh",
-        background: "var(--surface-0)",
+        background: "rgba(255, 255, 255)",
+        fontSize: 23,
       }}
     >
       {/* Desktop sidebar */}
       <aside
         style={{
           width: 200,
-          background: "var(--surface-1)",
+          background: "#191970",
           borderRight: "0.5px solid var(--border)",
           display: "flex",
           flexDirection: "column",
           position: "fixed",
           top: 0,
+
           bottom: 0,
           left: 0,
           zIndex: 30,
@@ -420,12 +422,12 @@ export const AdminDashboard: React.FC = () => {
               aria-label="Search"
               style={{
                 width: "100%",
-                background: "var(--surface-0)",
+                background: "#000000",
                 border: "0.5px solid var(--border)",
                 borderRadius: 7,
                 padding: "7px 10px 7px 32px",
-                fontSize: 12,
-                color: "var(--text-primary)",
+                fontSize: 14,
+                color: "#FFFFFF",
                 outline: "none",
                 fontFamily: "inherit",
               }}
@@ -443,7 +445,7 @@ export const AdminDashboard: React.FC = () => {
               padding: 6,
               borderRadius: 6,
               border: "0.5px solid var(--border)",
-              background: "var(--surface-0)",
+              background: "#8b8383",
               cursor: "pointer",
             }}
             title="Overview"
@@ -470,11 +472,11 @@ export const AdminDashboard: React.FC = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "none",
+              background: "#ffffff",
               border: "none",
-              color: "var(--text-secondary)",
+              color: "#000000",
               cursor: "pointer",
-              fontSize: 16,
+              fontSize: 25,
             }}
             aria-label="Messages"
           >
@@ -484,17 +486,17 @@ export const AdminDashboard: React.FC = () => {
           {/* Notifications */}
           <button
             style={{
-              width: 32,
-              height: 32,
+              width: 40,
+              height: 50,
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "none",
+              background: "#ffffff",
               border: "none",
-              color: "var(--text-secondary)",
+              color: "#000000",
               cursor: "pointer",
-              fontSize: 16,
+              fontSize: 25,
               position: "relative",
             }}
             aria-label="Notifications"
@@ -520,7 +522,7 @@ export const AdminDashboard: React.FC = () => {
               width: 32,
               height: 32,
               borderRadius: "50%",
-              background: "rgba(0,201,167,.15)",
+              background: "rgba(231, 224, 224, 0.88)",
               border: "1.5px solid rgba(0,201,167,.35)",
               display: "flex",
               alignItems: "center",
@@ -550,16 +552,14 @@ export const AdminDashboard: React.FC = () => {
           <div>
             <h1
               style={{
-                fontSize: 20,
+                fontSize: 24,
                 fontWeight: 500,
-                color: "var(--text-primary)",
+                color: "#000000",
               }}
             >
               Dashboard
             </h1>
-            <p
-              style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}
-            >
+            <p style={{ fontSize: 12, color: "#000000", marginTop: 2 }}>
               Welcome back, {user?.name?.split(" ")[0]}. Here's what's
               happening.
             </p>
@@ -571,6 +571,7 @@ export const AdminDashboard: React.FC = () => {
               display: "grid",
               gridTemplateColumns: "repeat(4,1fr)",
               gap: 10,
+              
             }}
           >
             {[
@@ -579,52 +580,52 @@ export const AdminDashboard: React.FC = () => {
                 value: formatCurrency(totalBorrowed),
                 delta: "+12% this month",
                 icon: "ti-coin",
-                bg: "#FAAD1418",
+                bg: "#ffff00",
                 border: "#FAAD1440",
-                labelColor: "#92620A",
-                valColor: "#8A5A08",
-                iconBg: "#FAAD1430",
-                iconColor: "#92620A",
-                deltaColor: "#00A888",
+                labelColor: "#000000",
+                valColor: "#000000",
+                iconBg: "#050401ef",
+                iconColor: "#9400D3",
+                deltaColor: "#000000",
               },
               {
                 label: "Active loans",
                 value: String(activeLoans),
                 delta: "Currently disbursed",
                 icon: "ti-check-circle",
-                bg: "rgba(0,201,167,.08)",
-                border: "rgba(0,201,167,.25)",
-                labelColor: "#007A66",
-                valColor: "#006B58",
-                iconBg: "rgba(0,201,167,.2)",
-                iconColor: "#007A66",
-                deltaColor: "#00A888",
+                bg: "rgb(255, 255, 255)",
+                border: "rgba(0, 0, 0, 0.25)",
+                labelColor: "#000000",
+                valColor: "#000000",
+                iconBg: "rgba(0, 0, 0, 0.81)",
+                iconColor: "#00FF00",
+                deltaColor: "#000000",
               },
               {
                 label: "Pending review",
                 value: String(pendingLoans),
                 delta: "Awaiting action",
                 icon: "ti-clock",
-                bg: "rgba(24,144,255,.08)",
-                border: "rgba(24,144,255,.25)",
-                labelColor: "#0D5FA0",
-                valColor: "#0B559A",
-                iconBg: "rgba(24,144,255,.2)",
-                iconColor: "#0D5FA0",
-                deltaColor: "var(--text-muted)",
+                bg: "#00FF00",
+                border: "#00FF00",
+                labelColor: "#03070a",
+                valColor: "#02060a",
+                iconBg: "rgb(255,255,255)",
+                iconColor: "#020202",
+                deltaColor: "#000000",
               },
               {
                 label: "Total borrowers",
                 value: String(uniqueBorrowers),
                 delta: "Registered users",
                 icon: "ti-users",
-                bg: "rgba(83,74,183,.08)",
-                border: "rgba(83,74,183,.25)",
-                labelColor: "#3C2F9A",
+                bg: "#00FFFF",
+                border: "rgba(0, 0, 0, 0.94)",
+                labelColor: "#020105",
                 valColor: "#352A90",
-                iconBg: "rgba(83,74,183,.2)",
-                iconColor: "#3C2F9A",
-                deltaColor: "#00A888",
+                iconBg: "rgb(3, 3, 3)",
+                iconColor: "#FFFFFF",
+                deltaColor: "#030303",
               },
             ].map((card) => (
               <div
@@ -646,7 +647,7 @@ export const AdminDashboard: React.FC = () => {
                 >
                   <span
                     style={{
-                      fontSize: 11,
+                      fontSize: 17,
                       fontWeight: 500,
                       color: card.labelColor,
                     }}
@@ -768,7 +769,7 @@ export const AdminDashboard: React.FC = () => {
                       style={{
                         width: "100%",
                         borderRadius: "3px 3px 0 0",
-                        background: "#1baf7a",
+                        background: "#065539",
                         opacity: i === 11 ? 0.45 : 0.8,
                         height: `${BAR_HEIGHTS[i]}%`,
                         minHeight: 4,

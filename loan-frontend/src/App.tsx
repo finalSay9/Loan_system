@@ -35,10 +35,10 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => (
 
 //helper components
 const SmartRedirect = () => {
-  const { user } = useAuthStore()
-  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'LOAN_OFFICER'
-  return <Navigate to={isAdmin ? '/admin/dashboard' : '/dashboard'} replace />
-}
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === "SUPER_ADMIN" || user?.role === "LOAN_OFFICER";
+  return <Navigate to={isAdmin ? "/admin/dashboard" : "/dashboard"} replace />;
+};
 
 export default function App() {
   return (
