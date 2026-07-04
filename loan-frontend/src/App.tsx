@@ -26,12 +26,19 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
   </ProtectedRoute>
 )
 
-// ↓ put it here, between AppLayout and export default
+
 const AdminRoute = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute roles={['SUPER_ADMIN', 'LOAN_OFFICER']}>
     {children}
   </ProtectedRoute>
 )
+
+//helper components
+const SmartRedirect = () => {
+  const { user } = useAuthStore()
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'LOAN_OFFICER'
+  return <Navigate to={isAdmin ? '/admin/dashboard' : '/dashboard'} replace />
+}
 
 export default function App() {
   return (
@@ -88,7 +95,7 @@ export default function App() {
           />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<SmartRedirect />} />
           <Route
             path="/dashboard"
             element={
