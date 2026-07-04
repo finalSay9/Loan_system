@@ -11,6 +11,7 @@ import { LoanDetail } from '@/pages/loans/LoanDetail'
 import { ApplyLoan } from '@/pages/loans/ApplyLoan'
 import { Profile } from '@/pages/profile/Profile'
 import { AdminLoans } from '@/pages/admin/AdminLoans'
+import { AdminDashboard } from "@/pages/admin/AdminDashboard";
 
 const qc = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 1000 * 30 } }
@@ -22,34 +23,135 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
   </ProtectedRoute>
 )
 
+// ↓ put it here, between AppLayout and export default
+const AdminRoute = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute roles={['SUPER_ADMIN', 'LOAN_OFFICER']}>
+    {children}
+  </ProtectedRoute>
+)
+
 export default function App() {
   return (
     <QueryClientProvider client={qc}>
       <BrowserRouter>
         <Routes>
+          <Route
+            path="/admin/dashboard"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/invoices"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/transactions"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/help"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
-          <Route path="/loans" element={<AppLayout><LoansList /></AppLayout>} />
-          <Route path="/loans/apply" element={<AppLayout><ApplyLoan /></AppLayout>} />
-          <Route path="/loans/:id" element={<AppLayout><LoanDetail /></AppLayout>} />
-          <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
-          <Route path="/admin/loans" element={
-            <ProtectedRoute roles={['SUPER_ADMIN', 'LOAN_OFFICER']}>
-              <Layout><AdminLoans /></Layout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/dashboard"
+            element={
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/loans"
+            element={
+              <AppLayout>
+                <LoansList />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/loans/apply"
+            element={
+              <AppLayout>
+                <ApplyLoan />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/loans/:id"
+            element={
+              <AppLayout>
+                <LoanDetail />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <AppLayout>
+                <Profile />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/admin/loans"
+            element={
+              <ProtectedRoute roles={["SUPER_ADMIN", "LOAN_OFFICER"]}>
+                <Layout>
+                  <AdminLoans />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
       <Toaster
         position="top-right"
         toastOptions={{
-          style: { background: '#1E2D3D', color: '#F0F4F8', border: '1px solid #243447', borderRadius: '10px', fontSize: '14px' },
-          success: { iconTheme: { primary: '#00C9A7', secondary: '#1E2D3D' } },
-          error: { iconTheme: { primary: '#FF4D4F', secondary: '#1E2D3D' } },
+          style: {
+            background: "#277ad3",
+            color: "#F0F4F8",
+            border: "1px solid #243447",
+            borderRadius: "10px",
+            fontSize: "14px",
+          },
+          success: { iconTheme: { primary: "#00C9A7", secondary: "#1E2D3D" } },
+          error: { iconTheme: { primary: "#FF4D4F", secondary: "#1E2D3D" } },
         }}
       />
     </QueryClientProvider>
-  )
+  );
 }
