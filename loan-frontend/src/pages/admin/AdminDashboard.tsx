@@ -776,7 +776,7 @@ export const AdminDashboard: React.FC = () => {
                         transition: "opacity .2s",
                       }}
                     />
-                    <span style={{ fontSize: 9, color: "#000000" }}>
+                    <span style={{ fontSize: 11, color: "#000000" }}>
                       {m}
                     </span>
                   </div>
@@ -787,7 +787,7 @@ export const AdminDashboard: React.FC = () => {
             {/* Satisfaction */}
             <div
               style={{
-                background: "#9ACD3",
+                background: "#800000",
                 border: "0.5px solid var(--border)",
                 borderRadius: 10,
                 padding: "14px 16px",
@@ -906,7 +906,7 @@ export const AdminDashboard: React.FC = () => {
           {/* Recent loans table */}
           <div
             style={{
-              background: "#20B2AA",
+              background: "#ffff",
               border: "0.5px solid var(--border)",
               borderRadius: 10,
               overflow: "hidden",
@@ -923,9 +923,9 @@ export const AdminDashboard: React.FC = () => {
             >
               <span
                 style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "var(--text-primary)",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#000000",
                 }}
               >
                 Recent loan applications
@@ -934,7 +934,7 @@ export const AdminDashboard: React.FC = () => {
                 to="/admin/loans"
                 style={{
                   fontSize: 11,
-                  color: "#00A888",
+                  color: "#000000",
                   textDecoration: "none",
                 }}
               >
@@ -957,9 +957,9 @@ export const AdminDashboard: React.FC = () => {
                         key={h}
                         style={{
                           padding: "8px 16px",
-                          fontSize: 10,
-                          fontWeight: 500,
-                          color: "var(--text-muted)",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#000000",
                           textAlign: "left",
                           textTransform: "uppercase",
                           letterSpacing: ".04em",
@@ -1040,8 +1040,8 @@ export const AdminDashboard: React.FC = () => {
                                   width: 28,
                                   height: 28,
                                   borderRadius: "50%",
-                                  background: ac.bg,
-                                  color: ac.color,
+                                  background: "#ffff",
+                                  color: '#000000',
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
@@ -1057,15 +1057,15 @@ export const AdminDashboard: React.FC = () => {
                                   style={{
                                     fontSize: 12,
                                     fontWeight: 500,
-                                    color: "var(--text-primary)",
+                                    color: "#000000",
                                   }}
                                 >
                                   Borrower {i + 1}
                                 </div>
                                 <div
                                   style={{
-                                    fontSize: 10,
-                                    color: "var(--text-muted)",
+                                    fontSize: 12,
+                                    color: "#000000",
                                   }}
                                 >
                                   +265 9XX XXX XXX
@@ -1078,7 +1078,7 @@ export const AdminDashboard: React.FC = () => {
                               padding: "10px 16px",
                               fontSize: 12,
                               fontWeight: 500,
-                              color: "var(--text-primary)",
+                              color: "#000000",
                               whiteSpace: "nowrap",
                             }}
                           >
@@ -1101,7 +1101,7 @@ export const AdminDashboard: React.FC = () => {
                             style={{
                               padding: "10px 16px",
                               fontSize: 12,
-                              color: "var(--text-secondary)",
+                              color: "#000000",
                               whiteSpace: "nowrap",
                             }}
                           >
@@ -1111,7 +1111,7 @@ export const AdminDashboard: React.FC = () => {
                             style={{
                               padding: "10px 16px",
                               fontSize: 12,
-                              color: "var(--text-muted)",
+                              color: "#000000",
                               whiteSpace: "nowrap",
                             }}
                           >
@@ -1135,7 +1135,7 @@ export const AdminDashboard: React.FC = () => {
                                   width: 4,
                                   height: 4,
                                   borderRadius: "50%",
-                                  background: "currentColor",
+                                  background: "#000000",
                                 }}
                               />
                               {pill.label}
@@ -1153,7 +1153,7 @@ export const AdminDashboard: React.FC = () => {
                           padding: "40px 16px",
                           textAlign: "center",
                           fontSize: 13,
-                          color: "var(--text-muted)",
+                          color: "#000000",
                         }}
                       >
                         No loans yet
