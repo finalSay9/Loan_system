@@ -47,6 +47,7 @@ model User {
 
   loans        Loan[]
   auditLogs    AuditLog[]
+  feedback  Feedback[]
 
   @@map("users")
 }
@@ -121,4 +122,17 @@ model AuditLog {
   actor       User     @relation(fields: [actorId], references: [id])
 
   @@map("audit_logs")
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  loanId    String?  @map("loan_id")
+  rating    Int      // 1-4: 1=Poor, 2=Neutral, 3=Good, 4=Excellent
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("feedback")
 }

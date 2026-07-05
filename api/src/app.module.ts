@@ -4,6 +4,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { LoansModule } from './loans/loans.module';
+import { FeedbackService } from './feedback/feedback.service';
+import { FeedbackModule } from './feedback/feedback.module';
 
 
 @Module({
@@ -16,6 +18,8 @@ import { LoansModule } from './loans/loans.module';
     UsersModule,
     AuthModule,
     LoansModule,
+    FeedbackModule,
   ],
+  providers: [FeedbackService],
 })
 export class AppModule {}
