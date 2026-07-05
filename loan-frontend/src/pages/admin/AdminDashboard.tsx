@@ -1,1223 +1,433 @@
+
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getAllLoans } from "@/api";
 import { useAuthStore } from "@/store/auth.store";
-import {
-  formatCurrency,
-  formatDate,
-  loanStatusConfig,
-  getInitials,
-} from "@/utils";
-import type { LoanStatus } from "@/types";
+import { formatCurrency, formatDate, getInitials } from "@/utils";
 import api from "@/api/client";
 
+// ── Constants ────────────────────────────────────────────
 const NAV_ITEMS = [
-  { icon: "ti-layout-dashboard", label: "Dashboard", to: "/admin/dashboard" },
-  { icon: "ti-chart-bar", label: "Analytics", to: "/admin/analytics" },
-  { icon: "ti-file-text", label: "My loans", to: "/loans" },
-  { icon: "ti-files", label: "All loans", to: "/admin/loans" },
-  { icon: "ti-receipt", label: "Invoices", to: "/admin/invoices" },
-  {
-    icon: "ti-arrows-right-left",
-    label: "Transactions",
-    to: "/admin/transactions",
-  },
+  { icon: "ti-layout-dashboard", label: "Dashboard",    to: "/admin/dashboard" },
+  { icon: "ti-chart-bar",        label: "Analytics",    to: "/admin/analytics" },
+  { icon: "ti-file-text",        label: "My loans",     to: "/loans" },
+  { icon: "ti-files",            label: "All loans",    to: "/admin/loans" },
+  { icon: "ti-receipt",          label: "Invoices",     to: "/admin/invoices" },
+  { icon: "ti-arrows-right-left",label: "Transactions", to: "/admin/transactions" },
 ];
 const NAV_BOTTOM = [
-  { icon: "ti-settings", label: "Settings", to: "/admin/settings" },
+  { icon: "ti-settings",    label: "Settings",  to: "/admin/settings" },
   { icon: "ti-help-circle", label: "Help desk", to: "/admin/help" },
 ];
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-const BAR_HEIGHTS = [45, 62, 38, 80, 55, 90, 70, 48, 66, 200, 85, 72];
-
-// Real monthly stats
-const { data: statsData } = useQuery({
-  queryKey: ['monthly-stats'],
-  queryFn: () => api.get('/loans/stats/monthly').then(r => r.data),
-})
-const barHeights = statsData?.data?.map((m: any) => {
-  const max = Math.max(...statsData.data.map((x: any) => x.count), 1)
-  return Math.round((m.count / max) * 100)
-}) ?? BAR_HEIGHTS
-
-// Real satisfaction
-const { data: satisfactionData } = useQuery({
-  queryKey: ['satisfaction'],
-  queryFn: () => api.get('/feedback/stats').then(r => r.data),
-})
-
-// Real user names from loan.user relation
-// loans now include loan.user.name, loan.user.phone, loan.user.avatarUrl
-
-const STATUS_PILL: Record<string, { label: string; cls: string }> = {
-  PENDING: { label: "Pending", cls: "pill-pending" },
-  UNDER_REVIEW: { label: "Under review", cls: "pill-review" },
-  APPROVED: { label: "Approved", cls: "pill-approved" },
-  DISBURSED: { label: "Disbursed", cls: "pill-disbursed" },
-  CLOSED: { label: "Closed", cls: "pill-closed" },
-  DEFAULTED: { label: "Defaulted", cls: "pill-danger" },
+const STATUS_PILL: Record<string, { label: string; style: React.CSSProperties }> = {
+  PENDING:      { label: "Pending",      style: { background: "#FFF8E1", color: "#92620A", border: "1px solid #FAAD1440" } },
+  UNDER_REVIEW: { label: "Under review", style: { background: "#E8F5F2", color: "#007A66", border: "1px solid rgba(0,201,167,.3)" } },
+  APPROVED:     { label: "Approved",     style: { background: "#EAF3DE", color: "#3B6D11", border: "1px solid #C0DD97" } },
+  DISBURSED:    { label: "Disbursed",    style: { background: "#E6F1FB", color: "#185FA5", border: "1px solid #B5D4F4" } },
+  CLOSED:       { label: "Closed",       style: { background: "#F3F4F6", color: "#6B7280", border: "1px solid #E5E7EB" } },
+  DEFAULTED:    { label: "Defaulted",    style: { background: "#FCEBEB", color: "#A32D2D", border: "1px solid #F7C1C1" } },
 };
 
+const AVATAR_COLORS = [
+  { bg: "#E6F1FB", color: "#185FA5" },
+  { bg: "#EAF3DE", color: "#3B6D11" },
+  { bg: "#FAEEDA", color: "#854F0B" },
+  { bg: "#FBEAF0", color: "#993556" },
+  { bg: "#EEEDFE", color: "#534AB7" },
+  { bg: "#E1F5EE", color: "#0F6E56" },
+];
 
-
+// ── Component ─────────────────────────────────────────────
 export const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const { data } = useQuery({
+  // ── Data fetching ──
+  const { data: loansData } = useQuery({
     queryKey: ["admin-loans"],
     queryFn: () => getAllLoans(),
   });
-  const loans = data?.data ?? [];
+  const loans = loansData?.data ?? [];
 
+  const { data: statsData } = useQuery({
+    queryKey: ["monthly-stats"],
+    queryFn: () => api.get("/loans/stats/monthly").then((r) => r.data),
+  });
+
+  const { data: satisfactionData } = useQuery({
+    queryKey: ["satisfaction"],
+    queryFn: () => api.get("/feedback/stats").then((r) => r.data),
+  });
+
+  // ── Derived stats ──
   const totalBorrowed = loans.reduce((s, l) => s + Number(l.amount), 0);
-  const activeLoans = loans.filter((l) => l.status === "DISBURSED").length;
-  const pendingLoans = loans.filter((l) =>
-    ["PENDING", "UNDER_REVIEW"].includes(l.status),
-  ).length;
+  const activeLoans   = loans.filter((l) => l.status === "DISBURSED").length;
+  const pendingLoans  = loans.filter((l) => ["PENDING", "UNDER_REVIEW"].includes(l.status)).length;
   const uniqueBorrowers = new Set(loans.map((l) => l.userId)).size;
 
+  // ── Bar chart heights from real data ──
+  const rawMonths: { month: number; count: number }[] = statsData?.data ?? [];
+  const maxCount = Math.max(...rawMonths.map((m) => m.count), 1);
+  const barHeights = MONTHS.map((_, i) => {
+    const found = rawMonths.find((m) => m.month === i + 1);
+    return found ? Math.round((found.count / maxCount) * 100) : 0;
+  });
+
+  // ── Satisfaction from real data ──
+  const satRows: { label: string; percentage: number; color: string }[] = satisfactionData?.data
+    ? satisfactionData.data.map((r: any, idx: number) => ({
+        label: r.label,
+        percentage: r.percentage,
+        color: ["#1baf7a", "#2a78d6", "#eda100", "#e34948"][idx] ?? "#ccc",
+      }))
+    : [
+        { label: "Excellent", percentage: 0, color: "#1baf7a" },
+        { label: "Good",      percentage: 0, color: "#2a78d6" },
+        { label: "Neutral",   percentage: 0, color: "#eda100" },
+        { label: "Poor",      percentage: 0, color: "#e34948" },
+      ];
+  const overallPct: number = satisfactionData?.overallPercentage ?? 0;
+  const totalResponses: number = satisfactionData?.total ?? 0;
+
+  // ── Filtered table rows ──
   const filtered = loans
-    .filter(
-      (l) =>
-        search === "" ||
-        JSON.stringify(l).toLowerCase().includes(search.toLowerCase()),
+    .filter((l) =>
+      search === "" || JSON.stringify(l).toLowerCase().includes(search.toLowerCase())
     )
     .slice(0, 8);
+  const tableRows = filtered.length > 0 ? filtered : loans.slice(0, 6);
 
+  // ── Sidebar ──────────────────────────────────────────────
   const SidebarContent = ({ onClose }: { onClose?: () => void }) => (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div
-        style={{
-          padding: "18px 16px 14px",
-          borderBottom: "0.5px solid var(--border)",
-          display: "flex",
-          alignItems: "center",
-          gap: 9,
-        }}
-      >
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 7,
-            background: "#044ce7",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ color: "#0a1420", fontWeight: 900, fontSize: 10 }}>
-            LF
-          </span>
+      {/* Logo */}
+      <div style={{ padding: "18px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: "#00C9A7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ color: "#0a1420", fontWeight: 900, fontSize: 11 }}>LF</span>
         </div>
         <div>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: "var(--text-primary)",
-              lineHeight: 1.2,
-            }}
-          >
-            LoanFlow
-          </div>
-          <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
-            Admin portal
-          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", lineHeight: 1.2 }}>LoanFlow</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>Admin portal</div>
         </div>
       </div>
 
-      <nav
-        style={{
-          flex: 1,
-          padding: "10px 8px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 1,
-        }}
-      >
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
         {NAV_ITEMS.map(({ icon, label, to }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={onClose}
+          <NavLink key={to} to={to} onClick={onClose}
             style={({ isActive }) => ({
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 10px",
-              borderRadius: 7,
-              fontSize: 14,
-              textDecoration: "none",
-              transition: "all .15s",
-              color: isActive ? "#00A888" : "var(--text-secondary)",
-              background: isActive ? "rgba(23, 102, 93, 0.77)" : "transparent",
-            })}
-          >
-            <i
-              className={`ti ${icon}`}
-              style={{ fontSize: 15, width: 16 }}
-              aria-hidden="true"
-            />
+              display: "flex", alignItems: "center", gap: 10, padding: "9px 12px",
+              borderRadius: 7, fontSize: 13, fontWeight: 500, textDecoration: "none", transition: "all .15s",
+              color: isActive ? "#ffffff" : "rgba(255,255,255,0.6)",
+              background: isActive ? "rgba(255,255,255,0.15)" : "transparent",
+            })}>
+            <i className={`ti ${icon}`} style={{ fontSize: 16, width: 18 }} aria-hidden="true" />
             {label}
           </NavLink>
         ))}
-        <div
-          style={{
-            height: "0.5px",
-            background: "var(--border)",
-            margin: "6px 10px",
-          }}
-        />
+        <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "8px 10px" }} />
         {NAV_BOTTOM.map(({ icon, label, to }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={onClose}
+          <NavLink key={to} to={to} onClick={onClose}
             style={({ isActive }) => ({
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 10px",
-              borderRadius: 7,
-              fontSize: 12,
-              textDecoration: "none",
-              color: isActive ? "#00A888" : "var(--text-secondary)",
-              background: isActive ? "rgba(0,201,167,.1)" : "transparent",
-            })}
-          >
-            <i
-              className={`ti ${icon}`}
-              style={{ fontSize: 15, width: 16 }}
-              aria-hidden="true"
-            />
+              display: "flex", alignItems: "center", gap: 10, padding: "9px 12px",
+              borderRadius: 7, fontSize: 13, fontWeight: 500, textDecoration: "none",
+              color: isActive ? "#ffffff" : "rgba(255,255,255,0.6)",
+              background: isActive ? "rgba(255,255,255,0.15)" : "transparent",
+            })}>
+            <i className={`ti ${icon}`} style={{ fontSize: 16, width: 18 }} aria-hidden="true" />
             {label}
           </NavLink>
         ))}
-        <div
-          style={{
-            height: "0.5px",
-            background: "var(--border)",
-            margin: "6px 10px",
-          }}
-        />
-        <button
-          onClick={() => {
-            logout();
-            navigate("/login");
-          }}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 10px",
-            borderRadius: 7,
-            fontSize: 12,
-            color: "var(--text-muted)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            width: "100%",
-          }}
-        >
-          <i
-            className="ti ti-logout"
-            style={{ fontSize: 15, width: 16 }}
-            aria-hidden="true"
-          />
+        <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "8px 10px" }} />
+        <button onClick={() => { logout(); navigate("/login"); }}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 7, fontSize: 13, color: "rgba(255,255,255,0.5)", background: "none", border: "none", cursor: "pointer", width: "100%", fontWeight: 500 }}>
+          <i className="ti ti-logout" style={{ fontSize: 16, width: 18 }} aria-hidden="true" />
           Log out
         </button>
       </nav>
 
-      <div
-        style={{ padding: "12px 10px", borderTop: "0.5px solid var(--border)" }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 10px",
-          }}
-        >
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              background: "rgba(0,201,167,.12)",
-              border: "1.5px solid rgba(0,201,167,.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <span style={{ color: "#00A888", fontSize: 10, fontWeight: 700 }}>
-              {getInitials(user?.name ?? "A")}
-            </span>
+      {/* User footer */}
+      <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px" }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ color: "#ffffff", fontSize: 11, fontWeight: 700 }}>{getInitials(user?.name ?? "A")}</span>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 23,
-                fontWeight: 500,
-                color: "var(--text-primary)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {user?.name}
-            </div>
-            <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
-              {user?.role?.replace(/_/g, " ")}
-            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.name}</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>{user?.role?.replace(/_/g, " ")}</div>
           </div>
         </div>
       </div>
     </div>
   );
 
+  // ── Render ────────────────────────────────────────────────
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        background: "rgba(255, 255, 255)",
-        fontSize: 23,
-      }}
-    >
-      {/* Desktop sidebar */}
-      <aside
-        style={{
-          width: 200,
-          background: "#191970",
-          borderRight: "0.5px solid var(--border)",
-          display: "flex",
-          flexDirection: "column",
-          position: "fixed",
-          top: 0,
+    <div style={{ display: "flex", minHeight: "100vh", background: "#F4F6FA" }}>
 
-          bottom: 0,
-          left: 0,
-          zIndex: 30,
-        }}
-        className="hide-mobile"
-      >
+      {/* Desktop sidebar */}
+      <aside className="hide-mobile" style={{ width: 220, background: "#191970", display: "flex", flexDirection: "column", position: "fixed", top: 0, bottom: 0, left: 0, zIndex: 30 }}>
         <SidebarContent />
       </aside>
 
-      {/* Mobile overlay */}
+      {/* Mobile overlay sidebar */}
       {sidebarOpen && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex" }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(0,0,0,.6)",
-            }}
-            onClick={() => setSidebarOpen(false)}
-          />
-          <aside
-            style={{
-              position: "relative",
-              width: 220,
-              background: "var(--surface-1)",
-              borderRight: "0.5px solid var(--border)",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <button
-              onClick={() => setSidebarOpen(false)}
-              style={{
-                position: "absolute",
-                top: 12,
-                right: 12,
-                background: "none",
-                border: "none",
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                fontSize: 18,
-              }}
-            >
-              ✕
-            </button>
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex" }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.6)" }} onClick={() => setSidebarOpen(false)} />
+          <aside style={{ position: "relative", width: 240, background: "#1a3a6b", display: "flex", flexDirection: "column" }}>
+            <button onClick={() => setSidebarOpen(false)} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 20 }}>✕</button>
             <SidebarContent onClose={() => setSidebarOpen(false)} />
           </aside>
         </div>
       )}
 
-      {/* Main */}
-      <div
-        style={{
-          flex: 1,
-          marginLeft: 200,
-          display: "flex",
-          flexDirection: "column",
-          minHeight: "100vh",
-        }}
-        className="main-shift"
-      >
-        {/* Topbar */}
-        <header
-          style={{
-            padding: "10px 24px",
-            borderBottom: "0.5px solid var(--border)",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            background: "var(--surface-1)",
-            position: "sticky",
-            top: 0,
-            zIndex: 20,
-            flexShrink: 0,
-          }}
-        >
-          <button
-            onClick={() => setSidebarOpen(true)}
-            style={{
-              display: "none",
-              background: "none",
-              border: "none",
-              color: "var(--text-secondary)",
-              cursor: "pointer",
-            }}
-            className="menu-btn-admin"
-          >
-            <i
-              className="ti ti-menu-2"
-              style={{ fontSize: 20 }}
-              aria-label="Open menu"
-            />
+      {/* Main area */}
+      <div className="main-shift" style={{ flex: 1, marginLeft: 220, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+
+        {/* Top bar */}
+        <header style={{ padding: "12px 24px", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", gap: 12, background: "#ffffff", position: "sticky", top: 0, zIndex: 20, flexShrink: 0 }}>
+          <button className="menu-btn-admin" onClick={() => setSidebarOpen(true)}
+            style={{ display: "none", background: "none", border: "none", color: "#6B7280", cursor: "pointer", padding: 4 }}>
+            <i className="ti ti-menu-2" style={{ fontSize: 22 }} />
           </button>
 
           {/* Search */}
-          <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
-            <i
-              className="ti ti-search"
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                left: 10,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "var(--text-muted)",
-                fontSize: 14,
-              }}
-            />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search loans, borrowers…"
-              aria-label="Search"
-              style={{
-                width: "100%",
-                background: "#000000",
-                border: "0.5px solid var(--border)",
-                borderRadius: 7,
-                padding: "7px 10px 7px 32px",
-                fontSize: 14,
-                color: "#FFFFFF",
-                outline: "none",
-                fontFamily: "inherit",
-              }}
-            />
+          <div style={{ position: "relative", flex: 1, maxWidth: 320 }}>
+            <i className="ti ti-search" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", fontSize: 15 }} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search loans, borrowers…"
+              style={{ width: "100%", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 8, padding: "8px 12px 8px 34px", fontSize: 13, color: "#111827", outline: "none", fontFamily: "inherit" }} />
           </div>
 
           <div style={{ flex: 1 }} />
 
-          {/* 4-dot overview */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 2,
-              padding: 6,
-              borderRadius: 6,
-              border: "0.5px solid var(--border)",
-              background: "#8b8383",
-              cursor: "pointer",
-            }}
-            title="Overview"
-          >
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: 1,
-                  background: "var(--text-muted)",
-                }}
-              />
-            ))}
+          {/* 4-dot grid */}
+          <div title="Overview" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3, padding: 7, borderRadius: 7, border: "1px solid #E5E7EB", background: "#F9FAFB", cursor: "pointer" }}>
+            {[0,1,2,3].map((k) => <div key={k} style={{ width: 5, height: 5, borderRadius: 1, background: "#9CA3AF" }} />)}
           </div>
 
           {/* Messages */}
-          <button
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "#ffffff",
-              border: "none",
-              color: "#000000",
-              cursor: "pointer",
-              fontSize: 25,
-            }}
-            aria-label="Messages"
-          >
-            <i className="ti ti-message-circle" aria-hidden="true" />
+          <button aria-label="Messages" style={{ width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: "#F9FAFB", border: "1px solid #E5E7EB", color: "#6B7280", cursor: "pointer", fontSize: 17 }}>
+            <i className="ti ti-message-circle" />
           </button>
 
           {/* Notifications */}
-          <button
-            style={{
-              width: 40,
-              height: 50,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "#ffffff",
-              border: "none",
-              color: "#000000",
-              cursor: "pointer",
-              fontSize: 25,
-              position: "relative",
-            }}
-            aria-label="Notifications"
-          >
-            <i className="ti ti-bell" aria-hidden="true" />
-            <span
-              style={{
-                position: "absolute",
-                top: 5,
-                right: 5,
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: "#e34948",
-                border: "1.5px solid var(--surface-1)",
-              }}
-            />
+          <button aria-label="Notifications" style={{ width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: "#F9FAFB", border: "1px solid #E5E7EB", color: "#6B7280", cursor: "pointer", fontSize: 17, position: "relative" }}>
+            <i className="ti ti-bell" />
+            <span style={{ position: "absolute", top: 6, right: 6, width: 7, height: 7, borderRadius: "50%", background: "#EF4444", border: "1.5px solid #ffffff" }} />
           </button>
 
           {/* Avatar */}
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: "rgba(231, 224, 224, 0.88)",
-              border: "1.5px solid rgba(0,201,167,.35)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-            title="Profile"
-          >
-            <span style={{ fontSize: 11, fontWeight: 500, color: "#00A888" }}>
-              {getInitials(user?.name ?? "A")}
-            </span>
+          <div title="Profile" style={{ width: 36, height: 36, borderRadius: "50%", background: "#1a3a6b", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#ffffff" }}>{getInitials(user?.name ?? "A")}</span>
           </div>
         </header>
 
-        {/* Content */}
-        <main
-          style={{
-            flex: 1,
-            padding: "24px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-            overflowY: "auto",
-          }}
-        >
-          {/* Page title */}
+        {/* Page content */}
+        <main style={{ flex: 1, padding: "24px", display: "flex", flexDirection: "column", gap: 20 }}>
+
+          {/* Page heading */}
           <div>
-            <h1
-              style={{
-                fontSize: 24,
-                fontWeight: 500,
-                color: "#000000",
-              }}
-            >
-              Dashboard
-            </h1>
-            <p style={{ fontSize: 12, color: "#000000", marginTop: 2 }}>
-              Welcome back, {user?.name?.split(" ")[0]}. Here's what's
-              happening.
+            <h1 style={{ fontSize: 25, fontWeight: 700, color: "#111827", margin: 0 }}>Dashboard</h1>
+            <p style={{ fontSize: 13, color: "#6B7280", marginTop: 3 }}>
+              Welcome back, {user?.name?.split(" ")[0]}. Here's what's happening today.
             </p>
           </div>
 
-          {/* Stat cards */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4,1fr)",
-              gap: 10,
-            }}
-          >
-            {[
-              {
-                label: "Total borrowed",
-                value: formatCurrency(totalBorrowed),
-                delta: "+12% this month",
-                icon: "ti-coin",
-                bg: "#ffff00",
-                border: "#FAAD1440",
-                labelColor: "#000000",
-                valColor: "#000000",
-                iconBg: "#050401ef",
-                iconColor: "#9400D3",
-                deltaColor: "#000000",
-              },
-              {
-                label: "Active loans",
-                value: String(activeLoans),
-                delta: "Currently disbursed",
-                icon: "ti-check-circle",
-                bg: "rgb(255, 255, 255)",
-                border: "rgba(0, 0, 0, 0.25)",
-                labelColor: "#000000",
-                valColor: "#000000",
-                iconBg: "rgba(0, 0, 0, 0.81)",
-                iconColor: "#00FF00",
-                deltaColor: "#000000",
-              },
-              {
-                label: "Pending review",
-                value: String(pendingLoans),
-                delta: "Awaiting action",
-                icon: "ti-clock",
-                bg: "#00FF00",
-                border: "#00FF00",
-                labelColor: "#03070a",
-                valColor: "#02060a",
-                iconBg: "rgb(255,255,255)",
-                iconColor: "#020202",
-                deltaColor: "#000000",
-              },
-              {
-                label: "Total borrowers",
-                value: String(uniqueBorrowers),
-                delta: "Registered users",
-                icon: "ti-users",
-                bg: "#00FFFF",
-                border: "rgba(0, 0, 0, 0.94)",
-                labelColor: "#020105",
-                valColor: "#352A90",
-                iconBg: "rgb(3, 3, 3)",
-                iconColor: "#FFFFFF",
-                deltaColor: "#030303",
-              },
-            ].map((card) => (
-              <div
-                key={card.label}
-                style={{
-                  background: card.bg,
-                  border: `0.5px solid ${card.border}`,
-                  borderRadius: 10,
-                  padding: "14px 16px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 10,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 17,
-                      fontWeight: 500,
-                      color: card.labelColor,
-                    }}
-                  >
-                    {card.label}
-                  </span>
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 7,
-                      background: card.iconBg,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <i
-                      className={`ti ${card.icon}`}
-                      style={{ fontSize: 14, color: card.iconColor }}
-                      aria-hidden="true"
-                    />
-                  </div>
-                </div>
-                <div
-                  style={{
-                    fontSize: 22,
-                    fontWeight: 500,
-                    color: card.valColor,
-                    marginBottom: 6,
-                  }}
-                >
-                  {card.value}
-                </div>
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: card.deltaColor,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 3,
-                  }}
-                >
-                  <i
-                    className="ti ti-trending-up"
-                    style={{ fontSize: 11 }}
-                    aria-hidden="true"
-                  />
-                  {card.delta}
+          {/* ── Stat cards ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
+            {/* Card 1 — Yellow, bold */}
+            <div style={{ background: "#ffff00", borderRadius: 12, padding: "18px 20px", boxShadow: "0 2px 8px rgba(250,173,20,0.35)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#78490A", textTransform: "uppercase", letterSpacing: ".04em" }}>Total borrowed</span>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <i className="ti ti-coin" style={{ fontSize: 16, color: "#1a0e00" }} />
                 </div>
               </div>
-            ))}
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#1a0e00", marginBottom: 6 }}>{formatCurrency(totalBorrowed)}</div>
+              <div style={{ fontSize: 11, color: "#78490A", display: "flex", alignItems: "center", gap: 3 }}>
+                <i className="ti ti-trending-up" style={{ fontSize: 12 }} /> +12% this month
+              </div>
+            </div>
+
+            {/* Card 2 — White */}
+            <div style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: ".04em" }}>Active loans</span>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "#DCFCE7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <i className="ti ti-check-circle" style={{ fontSize: 16, color: "#16A34A" }} />
+                </div>
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{activeLoans}</div>
+              <div style={{ fontSize: 11, color: "#16A34A", display: "flex", alignItems: "center", gap: 3 }}>
+                <i className="ti ti-trending-up" style={{ fontSize: 12 }} /> Currently disbursed
+              </div>
+            </div>
+
+            {/* Card 3 — White */}
+            <div style={{ background: "#00ffff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: ".04em" }}>Pending review</span>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "#DBEAFE", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <i className="ti ti-clock" style={{ fontSize: 16, color: "#2563EB" }} />
+                </div>
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{pendingLoans}</div>
+              <div style={{ fontSize: 11, color: "#6B7280", display: "flex", alignItems: "center", gap: 3 }}>
+                <i className="ti ti-clock" style={{ fontSize: 12 }} /> Awaiting officer action
+              </div>
+            </div>
+
+            {/* Card 4 — White */}
+            <div style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: ".04em" }}>Total borrowers</span>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <i className="ti ti-users" style={{ fontSize: 16, color: "#7C3AED" }} />
+                </div>
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{uniqueBorrowers}</div>
+              <div style={{ fontSize: 11, color: "#7C3AED", display: "flex", alignItems: "center", gap: 3 }}>
+                <i className="ti ti-trending-up" style={{ fontSize: 12 }} /> Registered users
+              </div>
+            </div>
           </div>
 
-          {/* Charts row */}
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
-          >
-            {/* Bar chart */}
-            <div
-              style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: 10,
-                padding: "14px 16px",
-                boxShadow: "1 3px 3px rgba(0,0,0,0.08)",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 14,
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: 20,
-                      fontWeight: 500,
-                      color: "#000000",
-                    }}
-                  >
-                    Borrow statistics
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "#000000",
-                      marginTop: 2,
-                    }}
-                  >
-                    Monthly disbursements — 2025
-                  </div>
-                </div>
+          {/* ── Charts row ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+
+            {/* Bar chart — real data */}
+            <div style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#000000" }}>Borrow statistics</div>
+                <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>Loan applications per month — {new Date().getFullYear()}</div>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
-                  gap: 5,
-                  height: 100,
-                }}
-                role="img"
-                aria-label="Monthly disbursements bar chart"
-              >
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 110 }} role="img" aria-label="Monthly loan applications bar chart">
                 {MONTHS.map((m, i) => (
-                  <div
-                    key={m}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 4,
-                      flex: 1,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "100%",
-                        borderRadius: "3px 3px 0 0",
-                        background: "#00FF00",
-                        opacity: i === 11 ? 0.45 : 0.8,
-                        height: `${BAR_HEIGHTS[i]}%`,
-                        minHeight: 4,
-                        transition: "opacity .2s",
-                      }}
-                    />
-                    <span style={{ fontSize: 11, color: "#000000" }}>
-                      {m}
-                    </span>
+                  <div key={m} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: 1 }}>
+                    <div style={{ width: "100%", borderRadius: "3px 3px 0 0", background: "#4b0082", opacity: barHeights[i] === 0 ? 0.15 : 0.85, height: `${Math.max(barHeights[i], barHeights[i] === 0 ? 4 : 4)}%`, minHeight: 4, transition: "height .4s ease" }} />
+                    <span style={{ fontSize: 9, color: "#9CA3AF" }}>{m}</span>
                   </div>
                 ))}
               </div>
+              {rawMonths.length === 0 && (
+                <p style={{ fontSize: 11, color: "#9CA3AF", textAlign: "center", marginTop: 8 }}>No data yet for this year</p>
+              )}
             </div>
 
-            {/* Satisfaction */}
-            <div
-              style={{
-                background: "#800000",
-                border: "0.5px solid var(--border)",
-                borderRadius: 10,
-                padding: "14px 16px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 14,
-                }}
-              >
+            {/* Satisfaction — real data */}
+            <div style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <div>
-                  <div
-                    style={{
-                      fontSize: 17,
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    Customer satisfaction
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "var(--text-muted)",
-                      marginTop: 2,
-                    }}
-                  >
-                    Based on borrower feedback
-                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>Customer satisfaction</div>
+                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>Based on borrower feedback</div>
                 </div>
-                <span
-                  style={{ fontSize: 20, fontWeight: 500, color: "#1baf7a" }}
-                >
-                  91%
+                <span style={{ fontSize: 24, fontWeight: 800, color: "#16A34A" }}>
+                  {totalResponses > 0 ? `${overallPct}%` : "—"}
                 </span>
               </div>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 10 }}
-              >
-                {[
-                  { label: "Excellent", pct: 68, color: "#1baf7a" },
-                  { label: "Good", pct: 23, color: "#2a78d6" },
-                  { label: "Neutral", pct: 6, color: "#eda100" },
-                  { label: "Poor", pct: 3, color: "#e34948" },
-                ].map((row) => (
-                  <div
-                    key={row.label}
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "var(--text-secondary)",
-                        width: 56,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {row.label}
-                    </span>
-                    <div
-                      style={{
-                        flex: 1,
-                        height: 6,
-                        background: "var(--surface-0)",
-                        borderRadius: 3,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          height: "100%",
-                          borderRadius: 3,
-                          background: row.color,
-                          width: `${row.pct}%`,
-                        }}
-                      />
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {satRows.map((row) => (
+                  <div key={row.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 12, color: "#374151", width: 60, flexShrink: 0 }}>{row.label}</span>
+                    <div style={{ flex: 1, height: 7, background: "#F3F4F6", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{ height: "100%", borderRadius: 4, background: row.color, width: `${row.percentage}%`, transition: "width .5s ease" }} />
                     </div>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: "var(--text-muted)",
-                        width: 28,
-                        textAlign: "right",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {row.pct}%
-                    </span>
+                    <span style={{ fontSize: 11, color: "#6B7280", width: 32, textAlign: "right", flexShrink: 0 }}>{row.percentage}%</span>
                   </div>
                 ))}
               </div>
-              <div
-                style={{
-                  marginTop: 12,
-                  paddingTop: 10,
-                  borderTop: "0.5px solid var(--border)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
-                  284 responses this month
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid #F3F4F6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 11, color: "#9CA3AF" }}>
+                  {totalResponses > 0 ? `${totalResponses} responses total` : "No feedback yet"}
                 </span>
-                <span
-                  style={{ fontSize: 14, color: "#1baf7a", cursor: "pointer" }}
-                >
-                  View all ↗
-                </span>
+                <NavLink to="/admin/loans" style={{ fontSize: 11, color: "#1a3a6b", textDecoration: "none", fontWeight: 600 }}>View all ↗</NavLink>
               </div>
             </div>
           </div>
 
-          {/* Recent loans table */}
-          <div
-            style={{
-              background: "#ffff",
-              border: "0.5px solid var(--border)",
-              borderRadius: 10,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                padding: "12px 18px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                borderBottom: "0.5px solid var(--border)",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "#000000",
-                }}
-              >
-                Recent loan applications
-              </span>
-              <NavLink
-                to="/admin/loans"
-                style={{
-                  fontSize: 11,
-                  color: "#000000",
-                  textDecoration: "none",
-                }}
-              >
-                View all ↗
-              </NavLink>
+          {/* ── Recent loans table ── */}
+          <div style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #F3F4F6" }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>Recent loan applications</span>
+              <NavLink to="/admin/loans" style={{ fontSize: 12, color: "#1a3a6b", textDecoration: "none", fontWeight: 600 }}>View all ↗</NavLink>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "var(--surface-1)" }}>
-                    {[
-                      "Borrower",
-                      "Amount",
-                      "Purpose",
-                      "Term",
-                      "Date applied",
-                      "Status",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        style={{
-                          padding: "8px 16px",
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: "#000000",
-                          textAlign: "left",
-                          textTransform: "uppercase",
-                          letterSpacing: ".04em",
-                          borderBottom: "0.5px solid var(--border)",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
+                  <tr style={{ background: "#F9FAFB" }}>
+                    {["Borrower", "Amount", "Purpose", "Term", "Date applied", "Status"].map((h) => (
+                      <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 700, color: "#6B7280", textAlign: "left", textTransform: "uppercase", letterSpacing: ".05em", borderBottom: "1px solid #F3F4F6", whiteSpace: "nowrap" }}>
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {(filtered.length > 0 ? filtered : loans.slice(0, 6)).map(
-                    (loan, i) => {
+                  {tableRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: "48px 16px", textAlign: "center", fontSize: 13, color: "#9CA3AF" }}>
+                        No loans yet
+                      </td>
+                    </tr>
+                  ) : (
+                    tableRows.map((loan, i) => {
+                      const loanAny = loan as any;
                       const ac = AVATAR_COLORS[i % AVATAR_COLORS.length];
-                      const pill = STATUS_PILL[loan.status] ?? {
-                        label: loan.status,
-                        cls: "pill-closed",
-                      };
-                      const pillStyles: Record<string, React.CSSProperties> = {
-                        "pill-pending": {
-                          background: "#FAAD1415",
-                          color: "#92620A",
-                          border: "0.5px solid #FAAD1440",
-                        },
-                        "pill-review": {
-                          background: "rgba(0,201,167,.1)",
-                          color: "#007A66",
-                          border: "0.5px solid rgba(0,201,167,.3)",
-                        },
-                        "pill-approved": {
-                          background: "#EAF3DE",
-                          color: "#3B6D11",
-                          border: "0.5px solid #C0DD97",
-                        },
-                        "pill-disbursed": {
-                          background: "#E6F1FB",
-                          color: "#185FA5",
-                          border: "0.5px solid #B5D4F4",
-                        },
-                        "pill-closed": {
-                          background: "var(--surface-1)",
-                          color: "var(--text-muted)",
-                          border: "0.5px solid var(--border)",
-                        },
-                        "pill-danger": {
-                          background: "#FCEBEB",
-                          color: "#A32D2D",
-                          border: "0.5px solid #F7C1C1",
-                        },
-                      };
+                      const pill = STATUS_PILL[loan.status] ?? STATUS_PILL["CLOSED"];
+                      const borrowerName: string = loanAny.user?.name ?? `Borrower ${i + 1}`;
+                      const borrowerPhone: string = loanAny.user?.phone ?? "+265 9XX XXX XXX";
+                      const avatarUrl: string | null = loanAny.user?.avatarUrl ?? null;
+
                       return (
-                        <tr
-                          key={loan.id}
-                          style={{
-                            borderBottom: "0.5px solid var(--border)",
-                            cursor: "pointer",
-                          }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.background =
-                              "var(--surface-1)")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.background = "transparent")
-                          }
-                        >
-                          <td style={{ padding: "10px 16px" }}>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 8,
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: 28,
-                                  height: 28,
-                                  borderRadius: "50%",
-                                  background: "#ffff",
-                                  color: "#000000",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontSize: 10,
-                                  fontWeight: 500,
-                                  flexShrink: 0,
-                                }}
-                              >
-                                {getInitials(`User ${i + 1}`)}
-                              </div>
+                        <tr key={loan.id} style={{ borderBottom: "1px solid #F9FAFB", cursor: "pointer", transition: "background .1s" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+
+                          {/* Borrower cell */}
+                          <td style={{ padding: "12px 16px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              {/* Avatar — real photo or coloured initials */}
+                              {avatarUrl ? (
+                                <img src={`http://localhost:3200${avatarUrl}`} alt={borrowerName}
+                                  style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1.5px solid #E5E7EB" }} />
+                              ) : (
+                                <div style={{ width: 34, height: 34, borderRadius: "50%", background: ac.bg, color: ac.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, border: `1.5px solid ${ac.color}30` }}>
+                                  {getInitials(borrowerName)}
+                                </div>
+                              )}
                               <div>
-                                <div
-                                  style={{
-                                    fontSize: 12,
-                                    fontWeight: 500,
-                                    color: "#000000",
-                                  }}
-                                >
-                                  // Replace "Borrower {i + 1}" with:
-                                  <div
-                                    style={{
-                                      fontSize: 12,
-                                      fontWeight: 500,
-                                      color: "#000000",
-                                    }}
-                                  >
-                                    {(loan as any).user?.name ?? "Unknown"}
-                                  </div>
-                                  <div
-                                    style={{ fontSize: 10, color: "#6b7280" }}
-                                  >
-                                    {(loan as any).user?.phone ?? "—"}
-                                  </div>
-                                  // Replace the letter avatar with real photo:
-                                  {(loan as any).user?.avatarUrl ? (
-                                    <img
-                                      src={`http://localhost:3200${(loan as any).user.avatarUrl}`}
-                                      style={{
-                                        width: 28,
-                                        height: 28,
-                                        borderRadius: "50%",
-                                        objectFit: "cover",
-                                      }}
-                                      alt=""
-                                    />
-                                  ) : (
-                                    <div
-                                      style={{
-                                        width: 28,
-                                        height: 28,
-                                        borderRadius: "50%",
-                                        background: ac.bg,
-                                        color: ac.color,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: 10,
-                                        fontWeight: 600,
-                                      }}
-                                    >
-                                      {getInitials(
-                                        (loan as any).user?.name ?? "U",
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                                <div
-                                  style={{
-                                    fontSize: 12,
-                                    color: "#000000",
-                                  }}
-                                >
-                                  +265 9XX XXX XXX
-                                </div>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{borrowerName}</div>
+                                <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 1 }}>{borrowerPhone}</div>
                               </div>
                             </div>
                           </td>
-                          <td
-                            style={{
-                              padding: "10px 16px",
-                              fontSize: 12,
-                              fontWeight: 500,
-                              color: "#000000",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
+
+                          <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "#111827", whiteSpace: "nowrap" }}>
                             {formatCurrency(Number(loan.amount))}
                           </td>
-                          <td
-                            style={{
-                              padding: "10px 16px",
-                              fontSize: 12,
-                              color: "var(--text-secondary)",
-                              maxWidth: 140,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
+                          <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {loan.purpose}
                           </td>
-                          <td
-                            style={{
-                              padding: "10px 16px",
-                              fontSize: 12,
-                              color: "#000000",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
+                          <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151", whiteSpace: "nowrap" }}>
                             {loan.termMonths} mo
                           </td>
-                          <td
-                            style={{
-                              padding: "10px 16px",
-                              fontSize: 12,
-                              color: "#000000",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
+                          <td style={{ padding: "12px 16px", fontSize: 13, color: "#6B7280", whiteSpace: "nowrap" }}>
                             {formatDate(loan.createdAt)}
                           </td>
-                          <td style={{ padding: "10px 16px" }}>
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 4,
-                                padding: "3px 8px",
-                                borderRadius: 99,
-                                fontSize: 10,
-                                fontWeight: 500,
-                                ...pillStyles[pill.cls],
-                              }}
-                            >
-                              <span
-                                style={{
-                                  width: 4,
-                                  height: 4,
-                                  borderRadius: "50%",
-                                  background: "#000000",
-                                }}
-                              />
+                          <td style={{ padding: "12px 16px" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600, ...pill.style }}>
+                              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor" }} />
                               {pill.label}
                             </span>
                           </td>
                         </tr>
                       );
-                    },
-                  )}
-                  {loans.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        style={{
-                          padding: "40px 16px",
-                          textAlign: "center",
-                          fontSize: 13,
-                          color: "#000000",
-                        }}
-                      >
-                        No loans yet
-                      </td>
-                    </tr>
+                    })
                   )}
                 </tbody>
               </table>
@@ -1228,11 +438,11 @@ export const AdminDashboard: React.FC = () => {
 
       <style>{`
         @media(max-width:1023px){
-          .hide-mobile{display:none!important}
-          .main-shift{margin-left:0!important}
-          .menu-btn-admin{display:flex!important}
-          div[style*="grid-template-columns: repeat(4"]{grid-template-columns:repeat(2,1fr)!important}
-          div[style*="grid-template-columns: 1fr 1fr"]{grid-template-columns:1fr!important}
+          .hide-mobile { display: none !important }
+          .main-shift  { margin-left: 0 !important }
+          .menu-btn-admin { display: flex !important }
+          .stats-grid  { grid-template-columns: repeat(2,1fr) !important }
+          .charts-grid { grid-template-columns: 1fr !important }
         }
       `}</style>
     </div>
