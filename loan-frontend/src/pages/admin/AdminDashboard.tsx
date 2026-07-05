@@ -42,7 +42,7 @@ const MONTHS = [
   "Nov",
   "Dec",
 ];
-const BAR_HEIGHTS = [45, 62, 38, 80, 55, 90, 70, 48, 66, 100, 85, 72];
+const BAR_HEIGHTS = [45, 62, 38, 80, 55, 90, 70, 48, 66, 200, 85, 72];
 
 const STATUS_PILL: Record<string, { label: string; cls: string }> = {
   PENDING: { label: "Pending", cls: "pill-pending" },
@@ -571,7 +571,6 @@ export const AdminDashboard: React.FC = () => {
               display: "grid",
               gridTemplateColumns: "repeat(4,1fr)",
               gap: 10,
-              
             }}
           >
             {[
@@ -709,10 +708,11 @@ export const AdminDashboard: React.FC = () => {
             {/* Bar chart */}
             <div
               style={{
-                background: "var(--surface-2)",
-                border: "0.5px solid var(--border)",
+                background: "#fff",
+                border: "1px solid #e5e7eb",
                 borderRadius: 10,
                 padding: "14px 16px",
+                boxShadow: "1 3px 3px rgba(0,0,0,0.08)",
               }}
             >
               <div
@@ -726,17 +726,17 @@ export const AdminDashboard: React.FC = () => {
                 <div>
                   <div
                     style={{
-                      fontSize: 12,
+                      fontSize: 20,
                       fontWeight: 500,
-                      color: "var(--text-primary)",
+                      color: "#000000",
                     }}
                   >
                     Borrow statistics
                   </div>
                   <div
                     style={{
-                      fontSize: 10,
-                      color: "var(--text-muted)",
+                      fontSize: 13,
+                      color: "#000000",
                       marginTop: 2,
                     }}
                   >
@@ -769,14 +769,14 @@ export const AdminDashboard: React.FC = () => {
                       style={{
                         width: "100%",
                         borderRadius: "3px 3px 0 0",
-                        background: "#065539",
+                        background: "#00FF00",
                         opacity: i === 11 ? 0.45 : 0.8,
                         height: `${BAR_HEIGHTS[i]}%`,
                         minHeight: 4,
                         transition: "opacity .2s",
                       }}
                     />
-                    <span style={{ fontSize: 9, color: "var(--text-muted)" }}>
+                    <span style={{ fontSize: 9, color: "#000000" }}>
                       {m}
                     </span>
                   </div>
@@ -787,7 +787,7 @@ export const AdminDashboard: React.FC = () => {
             {/* Satisfaction */}
             <div
               style={{
-                background: "var(--surface-2)",
+                background: "#9ACD3",
                 border: "0.5px solid var(--border)",
                 borderRadius: 10,
                 padding: "14px 16px",
@@ -804,8 +804,8 @@ export const AdminDashboard: React.FC = () => {
                 <div>
                   <div
                     style={{
-                      fontSize: 12,
-                      fontWeight: 500,
+                      fontSize: 17,
+                      fontWeight: 700,
                       color: "var(--text-primary)",
                     }}
                   >
@@ -813,7 +813,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <div
                     style={{
-                      fontSize: 10,
+                      fontSize: 13,
                       color: "var(--text-muted)",
                       marginTop: 2,
                     }}
@@ -895,7 +895,7 @@ export const AdminDashboard: React.FC = () => {
                   284 responses this month
                 </span>
                 <span
-                  style={{ fontSize: 10, color: "#1baf7a", cursor: "pointer" }}
+                  style={{ fontSize: 14, color: "#1baf7a", cursor: "pointer" }}
                 >
                   View all ↗
                 </span>
@@ -906,7 +906,7 @@ export const AdminDashboard: React.FC = () => {
           {/* Recent loans table */}
           <div
             style={{
-              background: "var(--surface-2)",
+              background: "#20B2AA",
               border: "0.5px solid var(--border)",
               borderRadius: 10,
               overflow: "hidden",
