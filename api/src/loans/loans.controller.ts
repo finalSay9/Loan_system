@@ -46,7 +46,7 @@ export class LoansController {
   }
 
   /**
-   * a user getting 
+   * a user getting
    * thier loans
    */
   @UseGuards(JwtAuthGuard)
@@ -57,9 +57,19 @@ export class LoansController {
   @ApiResponse({ status: 409, description: 'no loans available' })
   async getAllLoans(
     @GetUser('id') userId: string,
-    @Query() loanQuery: LoanQueryDto
-    ) {
+    @Query() loanQuery: LoanQueryDto,
+  ) {
     return await this.loanService.getMyLoans(userId, loanQuery);
+  }
+
+  /**
+   * adding the monthly stats
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+  @Get('stats/monthly')
+  async getMonthlyStats() {
+    return this.loanService.getMonthlyStats();
   }
 
   /**
@@ -85,8 +95,7 @@ export class LoansController {
   @ApiOperation({ summary: 'getting a loan by id' })
   @ApiResponse({ status: 200, description: 'loan retrived successfully' })
   @ApiResponse({ status: 409, description: 'no loan with that id available' })
-  async adminGetLoanById(
-    @Param('id', ParseUUIDPipe) loanId: string) {
+  async adminGetLoanById(@Param('id', ParseUUIDPipe) loanId: string) {
     return this.loanService.adminGetLoanById(loanId);
   }
 
@@ -104,7 +113,6 @@ export class LoansController {
     return await this.loanService.getLoanById(loanId, userId);
   }
 
-
   //updating the loan status
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id/status')
@@ -115,8 +123,8 @@ export class LoansController {
   @ApiResponse({ status: 409, description: 'no loan with that id available' })
   async updatingLoanStatus(
     @Param('id', ParseUUIDPipe) loanId: string,
-    @Body() status: UpdateLoanStatusDto, 
-    @GetUser('id') actorId: string, 
+    @Body() status: UpdateLoanStatusDto,
+    @GetUser('id') actorId: string,
   ) {
     return await this.loanService.updateLoanStatus(loanId, status, actorId);
   }
@@ -130,13 +138,15 @@ export class LoansController {
   @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'disbursing the loan' })
-  @ApiResponse({ status: 200, description: 'the operation worked successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'the operation worked successfully',
+  })
   @ApiResponse({ status: 409, description: 'no loan with that id available' })
   async disburseLoan(
     @Param('id', ParseUUIDPipe) loanId: string,
-    @GetUser('id') actorId: string
+    @GetUser('id') actorId: string,
   ) {
     return this.loanService.disburseLoan(loanId, actorId);
   }
-
 }

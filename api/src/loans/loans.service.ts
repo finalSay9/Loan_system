@@ -100,8 +100,6 @@ export class LoansService {
       orderBy: { createdAt: 'desc' },
     });
 
-    
-
     return {
       data: allAppliedLoans,
       meta: {page, limit, count: allAppliedLoans.length}
@@ -121,6 +119,38 @@ export class LoansService {
 
     return loan;
   }
+
+  /**
+   * getting loan
+   * stats
+   */
+  async getMonthlyStats() {
+  const currentYear = new Date().getFullYear()
+
+  // Raw query to group by month
+  const result = await this.prisma.$queryRaw<{ month: number; count: number }[]>`
+    SELECT 
+      EXTRACT(MONTH FROM created_at)::int AS month,
+      COUNT(*)::int AS count
+    FROM loans
+    WHERE 
+      EXTRACT(YEAR FROM created_at) = ${currentYear}
+      AND deleted_at IS NULL
+    GROUP BY month
+    ORDER BY month
+  `
+
+  // Fill all 12 months, defaulting missing months to 0
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const found = result.find(r => r.month === i + 1)
+    return { month: i + 1, count: found?.count ?? 0 }
+  })
+
+  return { data: months, year: currentYear }
+}
+
+
+
 
   // Update loan status
   async updateLoanStatus(
