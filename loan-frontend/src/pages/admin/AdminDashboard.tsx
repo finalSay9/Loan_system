@@ -10,6 +10,7 @@ import {
   getInitials,
 } from "@/utils";
 import type { LoanStatus } from "@/types";
+import api from "@/api/client";
 
 const NAV_ITEMS = [
   { icon: "ti-layout-dashboard", label: "Dashboard", to: "/admin/dashboard" },
@@ -44,6 +45,25 @@ const MONTHS = [
 ];
 const BAR_HEIGHTS = [45, 62, 38, 80, 55, 90, 70, 48, 66, 200, 85, 72];
 
+// Real monthly stats
+const { data: statsData } = useQuery({
+  queryKey: ['monthly-stats'],
+  queryFn: () => api.get('/loans/stats/monthly').then(r => r.data),
+})
+const barHeights = statsData?.data?.map((m: any) => {
+  const max = Math.max(...statsData.data.map((x: any) => x.count), 1)
+  return Math.round((m.count / max) * 100)
+}) ?? BAR_HEIGHTS
+
+// Real satisfaction
+const { data: satisfactionData } = useQuery({
+  queryKey: ['satisfaction'],
+  queryFn: () => api.get('/feedback/stats').then(r => r.data),
+})
+
+// Real user names from loan.user relation
+// loans now include loan.user.name, loan.user.phone, loan.user.avatarUrl
+
 const STATUS_PILL: Record<string, { label: string; cls: string }> = {
   PENDING: { label: "Pending", cls: "pill-pending" },
   UNDER_REVIEW: { label: "Under review", cls: "pill-review" },
@@ -53,14 +73,7 @@ const STATUS_PILL: Record<string, { label: string; cls: string }> = {
   DEFAULTED: { label: "Defaulted", cls: "pill-danger" },
 };
 
-const AVATAR_COLORS = [
-  { bg: "#E6F1FB", color: "#185FA5" },
-  { bg: "#EAF3DE", color: "#3B6D11" },
-  { bg: "#FAEEDA", color: "#854F0B" },
-  { bg: "#FBEAF0", color: "#e20e55" },
-  { bg: "#EEEDFE", color: "#534AB7" },
-  { bg: "#E1F5EE", color: "#0F6E56" },
-];
+
 
 export const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -1041,7 +1054,7 @@ export const AdminDashboard: React.FC = () => {
                                   height: 28,
                                   borderRadius: "50%",
                                   background: "#ffff",
-                                  color: '#000000',
+                                  color: "#000000",
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
@@ -1060,7 +1073,53 @@ export const AdminDashboard: React.FC = () => {
                                     color: "#000000",
                                   }}
                                 >
-                                  Borrower {i + 1}
+                                  // Replace "Borrower {i + 1}" with:
+                                  <div
+                                    style={{
+                                      fontSize: 12,
+                                      fontWeight: 500,
+                                      color: "#000000",
+                                    }}
+                                  >
+                                    {(loan as any).user?.name ?? "Unknown"}
+                                  </div>
+                                  <div
+                                    style={{ fontSize: 10, color: "#6b7280" }}
+                                  >
+                                    {(loan as any).user?.phone ?? "—"}
+                                  </div>
+                                  // Replace the letter avatar with real photo:
+                                  {(loan as any).user?.avatarUrl ? (
+                                    <img
+                                      src={`http://localhost:3200${(loan as any).user.avatarUrl}`}
+                                      style={{
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: "50%",
+                                        objectFit: "cover",
+                                      }}
+                                      alt=""
+                                    />
+                                  ) : (
+                                    <div
+                                      style={{
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: "50%",
+                                        background: ac.bg,
+                                        color: ac.color,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: 10,
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {getInitials(
+                                        (loan as any).user?.name ?? "U",
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                                 <div
                                   style={{

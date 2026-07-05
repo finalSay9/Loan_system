@@ -132,7 +132,8 @@ exports.Prisma.UserScalarFieldEnum = {
   kycStatus: 'kycStatus',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  deletedAt: 'deletedAt'
+  deletedAt: 'deletedAt',
+  avatarUrl: 'avatarUrl'
 };
 
 exports.Prisma.LoanScalarFieldEnum = {
@@ -189,6 +190,15 @@ exports.Prisma.AuditLogScalarFieldEnum = {
   timestamp: 'timestamp'
 };
 
+exports.Prisma.FeedbackScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  loanId: 'loanId',
+  rating: 'rating',
+  comment: 'comment',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -242,7 +252,8 @@ exports.Prisma.ModelName = {
   Loan: 'Loan',
   RepaymentSchedule: 'RepaymentSchedule',
   Transaction: 'Transaction',
-  AuditLog: 'AuditLog'
+  AuditLog: 'AuditLog',
+  Feedback: 'Feedback'
 };
 
 /**
