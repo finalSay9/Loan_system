@@ -85,9 +85,19 @@ export class LoansService {
       where: {
         ...(queryDto.status && { status: queryDto.status }),
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
+      },
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: {createdAt: 'desc'}
+      orderBy: { createdAt: 'desc' },
     });
 
     

@@ -5,9 +5,11 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
   const jwtSecret = configService.get<string>('JWT_SECRET');
 
@@ -15,6 +17,7 @@ async function bootstrap() {
     throw new Error('JWT_SECRET is not defined in environment variables');
   }
 
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/uploads' });
   // Security metrics
   app.use(helmet());
   app.use(compression());

@@ -18,6 +18,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
 import { extname } from 'path'
+import { GetUser } from 'src/auth/decorators/getUser.decorator';
 
 
 @Controller('users')
@@ -34,10 +35,38 @@ export class UsersController {
     return await this.usersService.createUser(createUserDto);
   }
 
-  //   {
-  //   "phone": "+265883341542",
-  //   "password": "Evan@1234"
-  // }
+  /**
+   * endpoint for the pofile
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('avatar')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/avatars',
+        filename: (req, file, cb) => {
+          cb(null, `${Date.now()}${extname(file.originalname)}`);
+        },
+      }),
+      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/image\/(jpg|jpeg|png|webp)/)) {
+          cb(new Error('Only image files allowed'), false);
+        } else {
+          cb(null, true);
+        }
+      },
+    }),
+  )
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @GetUser('id') userId: string,
+  ) {
+    return this.usersService.updateAvatar(
+      userId,
+      `/uploads/avatars/${file.filename}`,
+    );
+  }
 
   //mr specif route find the user by email
   @Get('search')

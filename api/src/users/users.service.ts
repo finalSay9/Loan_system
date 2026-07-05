@@ -89,31 +89,31 @@ export class UsersService {
   //finding user by id
   async findUserById(userId: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
-      where: {id: userId}
-    })
+      where: { id: userId },
+    });
 
     //if the user is not found
-    if(!user) {
-      throw new NotFoundException('user not found')
+    if (!user) {
+      throw new NotFoundException('user not found');
     }
     //stripping off the password
-    const {passwordHash, ...result} = user;
+    const { passwordHash, ...result } = user;
     return result;
   }
 
   //find user by email
   async findUserByEmail(email: string) {
-     // FIXED: Using findFirst to prevent runtime issues with optional types
+    // FIXED: Using findFirst to prevent runtime issues with optional types
     const user = await this.prisma.user.findFirst({
-      where: {email: email}
-    })
+      where: { email: email },
+    });
     //if user with that email dont exist
-    if(!user) {
-      throw new NotFoundException('user with this email doesnt exist')
+    if (!user) {
+      throw new NotFoundException('user with this email doesnt exist');
     }
 
     //striping the password
-    const {passwordHash, ...result} = user;
+    const { passwordHash, ...result } = user;
     return result;
   }
 
@@ -123,5 +123,18 @@ export class UsersService {
       secret: this.config.get<string>('JWT_SECRET'),
       expiresIn: (this.config.get<string>('JWT_EXPIRES_IN') ?? '7d') as any,
     });
+  }
+
+  /**
+   * the profile picture of the
+   * user
+   */
+  async updateAvatar(userId: string, avatarUrl: string) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+      select: { id: true, avatarUrl: true },
+    });
+    return { message: 'Avatar updated', data: user };
   }
 }
