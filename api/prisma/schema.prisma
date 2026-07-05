@@ -43,6 +43,7 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")  // soft delete
+  avatarUrl    String?   @map("avatar_url")
 
   loans        Loan[]
   auditLogs    AuditLog[]
