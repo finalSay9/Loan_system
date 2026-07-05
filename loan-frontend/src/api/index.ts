@@ -36,3 +36,9 @@ export const updateLoanStatus = (id: string, data: { status: string; reason?: st
 
 export const disburseLoan = (id: string) =>
   api.post(`/loans/${id}/disburse-loan`).then(r => r.data)
+
+export const getAllUsers = (params?: { search?: string }) =>
+  api.get<{ data: any[]; meta: any }>("/users", { params }).then((r) => r.data);
+
+export const getUserById = (id: string) =>
+  api.get<any>(`/users/${id}`).then((r) => r.data);

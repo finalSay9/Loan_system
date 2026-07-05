@@ -9,12 +9,17 @@ import api from "@/api/client";
 
 // ── Constants ────────────────────────────────────────────
 const NAV_ITEMS = [
-  { icon: "ti-layout-dashboard", label: "Dashboard",    to: "/admin/dashboard" },
-  { icon: "ti-chart-bar",        label: "Analytics",    to: "/admin/analytics" },
-  { icon: "ti-file-text",        label: "My loans",     to: "/loans" },
-  { icon: "ti-files",            label: "All loans",    to: "/admin/loans" },
-  { icon: "ti-receipt",          label: "Invoices",     to: "/admin/invoices" },
-  { icon: "ti-arrows-right-left",label: "Transactions", to: "/admin/transactions" },
+  { icon: "ti-layout-dashboard", label: "Dashboard", to: "/admin/dashboard" },
+  { icon: "ti-chart-bar", label: "Analytics", to: "/admin/analytics" },
+  { icon: "ti-file-text", label: "My loans", to: "/loans" },
+  { icon: "ti-files", label: "All loans", to: "/admin/loans" },
+  { icon: "ti-users", label: "Borrowers", to: "/admin/borrowers" },
+  { icon: "ti-receipt", label: "Invoices", to: "/admin/invoices" },
+  {
+    icon: "ti-arrows-right-left",
+    label: "Transactions",
+    to: "/admin/transactions",
+  },
 ];
 const NAV_BOTTOM = [
   { icon: "ti-settings",    label: "Settings",  to: "/admin/settings" },
@@ -232,7 +237,7 @@ export const AdminDashboard: React.FC = () => {
 
           {/* Page heading */}
           <div>
-            <h1 style={{ fontSize: 25, fontWeight: 700, color: "#111827", margin: 0 }}>Dashboard</h1>
+
             <p style={{ fontSize: 13, color: "#6B7280", marginTop: 3 }}>
               Welcome back, {user?.name?.split(" ")[0]}. Here's what's happening today.
             </p>
@@ -255,39 +260,39 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Card 2 — White */}
-            <div style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <div style={{ background: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: ".04em" }}>Active loans</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#000000", textTransform: "uppercase", letterSpacing: ".04em" }}>Active loans</span>
                 <div style={{ width: 32, height: 32, borderRadius: 8, background: "#DCFCE7", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <i className="ti ti-check-circle" style={{ fontSize: 16, color: "#16A34A" }} />
                 </div>
               </div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{activeLoans}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "#5F4A8B", marginBottom: 6 }}>{activeLoans}</div>
               <div style={{ fontSize: 11, color: "#16A34A", display: "flex", alignItems: "center", gap: 3 }}>
                 <i className="ti ti-trending-up" style={{ fontSize: 12 }} /> Currently disbursed
               </div>
             </div>
 
             {/* Card 3 — White */}
-            <div style={{ background: "#00ffff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <div style={{ background: "#5F4A8B", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: ".04em" }}>Pending review</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#000000", textTransform: "uppercase", letterSpacing: ".04em" }}>Pending review</span>
                 <div style={{ width: 32, height: 32, borderRadius: 8, background: "#DBEAFE", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <i className="ti ti-clock" style={{ fontSize: 16, color: "#2563EB" }} />
                 </div>
               </div>
               <div style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{pendingLoans}</div>
-              <div style={{ fontSize: 11, color: "#6B7280", display: "flex", alignItems: "center", gap: 3 }}>
+              <div style={{ fontSize: 11, color: "#000000", display: "flex", alignItems: "center", gap: 3 }}>
                 <i className="ti ti-clock" style={{ fontSize: 12 }} /> Awaiting officer action
               </div>
             </div>
 
             {/* Card 4 — White */}
-            <div style={{ background: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <div style={{ background: "#FEFACD", border: "1px solid #E5E7EB", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: ".04em" }}>Total borrowers</span>
                 <div style={{ width: 32, height: 32, borderRadius: 8, background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <i className="ti ti-users" style={{ fontSize: 16, color: "#7C3AED" }} />
+                  <i className="ti ti-users" style={{ fontSize: 16, color: "#0000000" }} />
                 </div>
               </div>
               <div style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{uniqueBorrowers}</div>

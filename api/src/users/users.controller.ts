@@ -10,6 +10,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  SetMetadata,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -19,6 +20,7 @@ import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
 import { extname } from 'path'
 import { GetUser } from 'src/auth/decorators/getUser.decorator';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 
 @Controller('users')
@@ -33,6 +35,18 @@ export class UsersController {
   @ApiResponse({ status: 409, description: 'Email already in use' })
   async createUser(@Body() createUserDto: CreateUserDto) {
     return await this.usersService.createUser(createUserDto);
+  }
+
+  /**
+   *
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+  @Get()
+  async getAllUsers(
+    @Query() query: { page?: number; limit?: number; search?: string },
+  ) {
+    return this.usersService.getAllUsers(query);
   }
 
   /**

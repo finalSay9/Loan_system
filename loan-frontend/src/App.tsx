@@ -12,7 +12,11 @@ import { ApplyLoan } from '@/pages/loans/ApplyLoan'
 import { Profile } from '@/pages/profile/Profile'
 import { AdminLoans } from '@/pages/admin/AdminLoans'
 import { AdminDashboard } from "@/pages/admin/AdminDashboard";
-import { useAuthStore } from '@/store/auth.store'
+import { useAuthStore } from '@/store/auth.store';
+import {
+  AdminBorrowers,
+  AdminBorrowerDetail,
+} from "@/pages/admin/AdminBorrowers";
 
 
 
@@ -69,6 +73,7 @@ export default function App() {
               </AdminRoute>
             }
           />
+          
           <Route
             path="/admin/transactions"
             element={
@@ -93,6 +98,9 @@ export default function App() {
               </AdminRoute>
             }
           />
+          
+<Route path="/admin/borrowers" element={<AdminRoute><AdminBorrowers /></AdminRoute>} />
+<Route path="/admin/borrowers/:id" element={<AdminRoute><AdminBorrowerDetail /></AdminRoute>} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={<SmartRedirect />} />

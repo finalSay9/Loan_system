@@ -137,4 +137,52 @@ export class UsersService {
     });
     return { message: 'Avatar updated', data: user };
   }
+
+  async getAllUsers(query: { page?: number; limit?: number; search?: string }) {
+  const page = Number(query.page ?? 1)
+  const limit = Number(query.limit ?? 50)
+  const search = query.search ?? ''
+
+  const users = await this.prisma.user.findMany({
+    where: {
+      role: 'BORROWER',
+      deletedAt: null,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search } },
+        ],
+      }),
+    },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      address: true,
+      occupation: true,
+      avatarUrl: true,
+      kycStatus: true,
+      createdAt: true,
+      loans: {
+        select: {
+          id: true,
+          amount: true,
+          purpose: true,
+          status: true,
+          termMonths: true,
+          interestRate: true,
+          createdAt: true,
+          disbursedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    skip: (page - 1) * limit,
+    take: limit,
+  })
+
+  return { data: users, meta: { page, limit, count: users.length } }
+}
 }
