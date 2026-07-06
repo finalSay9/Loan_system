@@ -38,4 +38,13 @@ export class FeedbackService {
           : 0,
     };
   }
+
+  async submitFeedback(
+    userId: string,
+    dto: { rating: number; comment?: string },
+  ) {
+    return this.prisma.feedback.create({
+      data: { userId, rating: dto.rating, comment: dto.comment },
+    });
+  }
 }
