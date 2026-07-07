@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
 import { getInitials, formatDate } from '@/utils'
 
-const KYC_CFG = {
+const KYC_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   PENDING:  { label: 'Pending',  color: '#FAAD14', bg: '#FAAD1415', border: '#FAAD1440' },
   VERIFIED: { label: 'Verified', color: '#00C9A7', bg: '#00C9A715', border: '#00C9A740' },
   REJECTED: { label: 'Rejected', color: '#FF4D4F', bg: '#FF4D4F15', border: '#FF4D4F40' },
@@ -13,7 +13,7 @@ const KYC_CFG = {
 export const Profile: React.FC = () => {
   const { user } = useAuthStore()
   if (!user) return null
-  const kyc = KYC_CFG[user.kycStatus]
+  const kyc = KYC_CFG[user.kycStatus] ?? KYC_CFG['PENDING']
 
   return (
     <div className="flex-col gap-6 fade-in" style={{ display: 'flex', maxWidth: 520 }}>

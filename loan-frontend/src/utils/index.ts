@@ -3,9 +3,12 @@ import type { LoanStatus } from '@/types'
 export const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-MW', { style: 'currency', currency: 'MWK', maximumFractionDigits: 0 }).format(amount)
 
-export const formatDate = (date: string) =>
-  new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(date))
-
+export const formatDate = (date: string | null | undefined) => {
+  if (!date) return '—'
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return '—'
+  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(d)
+}
 export const formatPhone = (phone: string) => phone
 
 export const loanStatusConfig: Record<LoanStatus, { label: string; color: string; bg: string; border: string; step: number }> = {
