@@ -47,11 +47,24 @@ if (existingTx) {
       });
 
       if (schedule) {
-        await tx.repaymentSchedule.update({
-          where: { id: schedule.id },
-          data: { amountPaid: dto.amount, status: 'PAID' },
-        });
-      }
+  const amountDue = Number(schedule.amountDue)
+  const amountPaid = Number(dto.amount)
+
+  if (amountPaid < amountDue) {
+    // Partial payment — record it but don't mark as fully paid
+    await tx.repaymentSchedule.update({
+      where: { id: schedule.id },
+      data: { amountPaid },
+      // status stays PENDING
+    })
+  } else {
+    // Full payment
+    await tx.repaymentSchedule.update({
+      where: { id: schedule.id },
+      data: { amountPaid, status: 'PAID' },
+    })
+  }
+}
 
       
 

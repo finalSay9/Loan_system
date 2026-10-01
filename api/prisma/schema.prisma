@@ -99,7 +99,7 @@ model Transaction {
   loanId       String   @map("loan_id")
   type         String   // DISBURSEMENT | REPAYMENT | PENALTY
   amount       Decimal  @db.Decimal(15, 2)
-  reference    String   @unique  // your internal ref
+  reference    String   @unique
   providerRef  String?  @map("provider_ref")  // mobile money ref
   createdAt    DateTime @default(now()) @map("created_at")
 
