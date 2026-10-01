@@ -24,31 +24,48 @@ export class LoansService {
   }
 
   //get my loans
-  async getMyLoans(userId: string, queryDto: LoanQueryDto) {
-    /**
-     * pagnation
-     */
-    const page = queryDto.page ?? 1;
-    const limit = queryDto.limit ?? 10;
-    //looking for thr loans of the uyser
-    const userLoans = await this.prisma.loan.findMany({
-      where: { 
-        userId: userId,
-        ...(queryDto.status && {status: queryDto.status}),
-       },
-       skip: (page - 1) * limit,
-       take: limit,
-       orderBy: {createdAt: 'desc'}
-    });
+  async getMyLoans(userId: string, query: LoanQueryDto) {
+  const page = query.page ?? 1
+  const limit = query.limit ?? 10
 
-    
+  const loans = await this.prisma.loan.findMany({
+    where: {
+      userId,
+      ...(query.status && { status: query.status }),
+    },
+    include: {
+      repayments: {
+        select: {
+          amountDue: true,
+          amountPaid: true,
+          status: true,
+          dueDate: true,
+        },
+      },
+    },
+    skip: (page - 1) * limit,
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+  })
+
+  // Attach balance summary to each loan
+  const withBalance = loans.map(loan => {
+    const totalDue = loan.repayments.reduce((s, r) => s + Number(r.amountDue), 0)
+    const totalPaid = loan.repayments.reduce((s, r) => s + Number(r.amountPaid), 0)
+    const outstanding = totalDue - totalPaid
     return {
-      data: userLoans,
-      meta: {page, limit, count: userLoans.length}
+      ...loan,
+      balance: {
+        totalDue,
+        totalPaid,
+        outstanding,
+        progressPercent: totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0,
+      },
     }
+  })
 
-  }
-
+  return { data: withBalance, meta: { page, limit, count: withBalance.length } }
+}
   //getting a loan by id
   async getLoanById(loanId: string, userId: string) {
     /**
