@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { GetUser } from 'src/auth/decorators/getUser.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { PaymentsService } from './payments.service';
+import { CreateRepaymentDto } from './dto/create-repayment.dto';
 
 @Controller('payments')
 export class PaymentsController {
@@ -13,7 +14,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @Post('repay')
   async makeRepayment(
-    @Body() dto: { loanId: string; amount: number; reference: string },
+    @Body() dto: CreateRepaymentDto,
     @GetUser('id') userId: string,
   ) {
     return this.paymentsService.makeRepayment(userId, dto);
