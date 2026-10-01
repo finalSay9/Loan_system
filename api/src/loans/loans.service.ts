@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateLoanDto } from './dto/create-loan-dto';
 import { LoanQueryDto } from './dto/loan-query.dto';
@@ -25,47 +29,57 @@ export class LoansService {
 
   //get my loans
   async getMyLoans(userId: string, query: LoanQueryDto) {
-  const page = query.page ?? 1
-  const limit = query.limit ?? 10
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
 
-  const loans = await this.prisma.loan.findMany({
-    where: {
-      userId,
-      ...(query.status && { status: query.status }),
-    },
-    include: {
-      repayments: {
-        select: {
-          amountDue: true,
-          amountPaid: true,
-          status: true,
-          dueDate: true,
+    const loans = await this.prisma.loan.findMany({
+      where: {
+        userId,
+        ...(query.status && { status: query.status }),
+      },
+      include: {
+        repayments: {
+          select: {
+            amountDue: true,
+            amountPaid: true,
+            status: true,
+            dueDate: true,
+          },
         },
       },
-    },
-    skip: (page - 1) * limit,
-    take: limit,
-    orderBy: { createdAt: 'desc' },
-  })
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    });
 
-  // Attach balance summary to each loan
-  const withBalance = loans.map(loan => {
-    const totalDue = loan.repayments.reduce((s, r) => s + Number(r.amountDue), 0)
-    const totalPaid = loan.repayments.reduce((s, r) => s + Number(r.amountPaid), 0)
-    const outstanding = totalDue - totalPaid
+    // Attach balance summary to each loan
+    const withBalance = loans.map((loan) => {
+      const totalDue = loan.repayments.reduce(
+        (s, r) => s + Number(r.amountDue),
+        0,
+      );
+      const totalPaid = loan.repayments.reduce(
+        (s, r) => s + Number(r.amountPaid),
+        0,
+      );
+      const outstanding = totalDue - totalPaid;
+      return {
+        ...loan,
+        balance: {
+          totalDue,
+          totalPaid,
+          outstanding,
+          progressPercent:
+            totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0,
+        },
+      };
+    });
+
     return {
-      ...loan,
-      balance: {
-        totalDue,
-        totalPaid,
-        outstanding,
-        progressPercent: totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0,
-      },
-    }
-  })
-
-  return { data: withBalance, meta: { page, limit, count: withBalance.length } }
-}
+      data: withBalance,
+      meta: { page, limit, count: withBalance.length },
+    };
+  }
   //getting a loan by id
   async getLoanById(loanId: string, userId: string) {
     /**
@@ -90,39 +104,42 @@ export class LoansService {
   }
 
   //getting all loans applied by users for admins only
-  async getAllLoans(queryDto: LoanQueryDto) {
-
-    /**
-     * pagination
-     */
-    const page = queryDto.page ?? 1;
-    const limit = queryDto.limit ?? 10;
-    //looking up in the database
-    const allAppliedLoans = await this.prisma.loan.findMany({
-      where: {
-        ...(queryDto.status && { status: queryDto.status }),
-      },
+  async getAllLoans(query: LoanQueryDto) {
+    const loans = await this.prisma.loan.findMany({
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-          },
+          select: { id: true, name: true, phone: true, avatarUrl: true },
+        },
+        repayments: {
+          select: { amountDue: true, amountPaid: true, status: true },
         },
       },
-      skip: (page - 1) * limit,
-      take: limit,
       orderBy: { createdAt: 'desc' },
     });
 
-    return {
-      data: allAppliedLoans,
-      meta: {page, limit, count: allAppliedLoans.length}
-    };
-  }
+    const withBalance = loans.map((loan) => {
+      const totalDue = loan.repayments.reduce(
+        (s, r) => s + Number(r.amountDue),
+        0,
+      );
+      const totalPaid = loan.repayments.reduce(
+        (s, r) => s + Number(r.amountPaid),
+        0,
+      );
+      return {
+        ...loan,
+        balance: {
+          totalDue,
+          totalPaid,
+          outstanding: totalDue - totalPaid,
+          progressPercent:
+            totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0,
+        },
+      };
+    });
 
+    return { data: withBalance, meta: { count: withBalance.length } };
+  }
   //loan officer sees any loan in deatil
   async adminGetLoanById(loanId: string) {
     //looking for the loan in the database
@@ -142,10 +159,12 @@ export class LoansService {
    * stats
    */
   async getMonthlyStats() {
-  const currentYear = new Date().getFullYear()
+    const currentYear = new Date().getFullYear();
 
-  // Raw query to group by month
-  const result = await this.prisma.$queryRaw<{ month: number; count: number }[]>`
+    // Raw query to group by month
+    const result = await this.prisma.$queryRaw<
+      { month: number; count: number }[]
+    >`
     SELECT 
       EXTRACT(MONTH FROM created_at)::int AS month,
       COUNT(*)::int AS count
@@ -155,19 +174,16 @@ export class LoansService {
       AND deleted_at IS NULL
     GROUP BY month
     ORDER BY month
-  `
+  `;
 
-  // Fill all 12 months, defaulting missing months to 0
-  const months = Array.from({ length: 12 }, (_, i) => {
-    const found = result.find(r => r.month === i + 1)
-    return { month: i + 1, count: found?.count ?? 0 }
-  })
+    // Fill all 12 months, defaulting missing months to 0
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const found = result.find((r) => r.month === i + 1);
+      return { month: i + 1, count: found?.count ?? 0 };
+    });
 
-  return { data: months, year: currentYear }
-}
-
-
-
+    return { data: months, year: currentYear };
+  }
 
   // Update loan status
   async updateLoanStatus(
@@ -291,29 +307,29 @@ export class LoansService {
     });
   }
 
-
   /**
    * now the system disburse the loan
    */
   async disburseLoan(loanId: string, actorId: string) {
     //look for loan in the database
     const approvedLoan = await this.prisma.loan.findUnique({
-      where: {id: loanId},
+      where: { id: loanId },
     });
 
     //if not available
-    if(!approvedLoan) {
-      throw new NotFoundException('the loan with this id not available')
-    };
+    if (!approvedLoan) {
+      throw new NotFoundException('the loan with this id not available');
+    }
 
     /**
-     * now the approved loan can be 
-     * disbursed by the system if and olny if the 
+     * now the approved loan can be
+     * disbursed by the system if and olny if the
      * the condition status can be met
      */
-    if(approvedLoan.status !== LoanStatus.APPROVED) {
+    if (approvedLoan.status !== LoanStatus.APPROVED) {
       throw new BadRequestException(
-        `Loan must be APPROVED before disbursement. Current status is ${approvedLoan.status}`,)
+        `Loan must be APPROVED before disbursement. Current status is ${approvedLoan.status}`,
+      );
     }
 
     /**
@@ -340,7 +356,7 @@ export class LoansService {
           entityId: loanId,
           beforeState: { status: approvedLoan.status },
           afterState: { status: LoanStatus.DISBURSED },
-        }
+        },
       });
 
       /**
@@ -352,17 +368,17 @@ export class LoansService {
        * setting up all the calculations
        */
       const principal = approvedLoan.amount.toNumber();
-      const annualRate = approvedLoan.interestRate.toNumber() /100;
+      const annualRate = approvedLoan.interestRate.toNumber() / 100;
       const monthlyRate = annualRate / 12;
       const totalMonths = approvedLoan.termMonths;
-      
+
       /**
        * now calculating total monthly
        * fixed payment
        */
-      let monthlyPayment =  0;
-      if(monthlyRate == 0) {
-        //Edge case: 0% interest loan 
+      let monthlyPayment = 0;
+      if (monthlyRate == 0) {
+        //Edge case: 0% interest loan
         monthlyPayment = principal / totalMonths;
       } else {
         monthlyPayment =
@@ -374,7 +390,7 @@ export class LoansService {
       monthlyPayment = Math.round(monthlyPayment * 100) / 100;
 
       /**
-       * now lets generate the 
+       * now lets generate the
        * schedule rows
        * by tracking the shrinking balance
        */
@@ -427,12 +443,10 @@ export class LoansService {
 
       // 5. Save the complete amortization schedule to the database
       await tx.repaymentSchedule.createMany({
-          data: scheduleRows
-        });
+        data: scheduleRows,
+      });
 
       return disbursed;
-    })
-   
-    
+    });
   }
 }

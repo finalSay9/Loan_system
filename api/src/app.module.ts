@@ -7,6 +7,7 @@ import { LoansModule } from './loans/loans.module';
 import { FeedbackService } from './feedback/feedback.service';
 import { FeedbackModule } from './feedback/feedback.module';
 import { PaymentsModule } from './payments/payments.module';
+import { EventsModule } from './events/events.module';
 
 
 @Module({
@@ -21,6 +22,7 @@ import { PaymentsModule } from './payments/payments.module';
     LoansModule,
     FeedbackModule,
     PaymentsModule,
+    EventsModule,
   ],
   providers: [FeedbackService],
 })

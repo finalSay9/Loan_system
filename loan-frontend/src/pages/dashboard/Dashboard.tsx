@@ -175,39 +175,41 @@ const PaymentModal: React.FC<{
   const activeLoans = loans.filter((l) => l.status === "DISBURSED");
 
   const { mutate, isPending } = useMutation({
-  mutationFn: () => api.post('/payments/repay', {
-    loanId: selectedLoan,
-    amount: Number(amount),
-    reference,
-  }),
-  onSuccess: (response: any) => {
-    // Invalidate everything that shows loan or payment data
-    qc.invalidateQueries({ queryKey: ['my-loans'] })
-    qc.invalidateQueries({ queryKey: ['my-transactions'] })
-    qc.invalidateQueries({ queryKey: ['loan-balance', selectedLoan] })
-    qc.invalidateQueries({ queryKey: ['admin-loans'] })
+    mutationFn: () =>
+      api.post("/payments/repay", {
+        loanId: selectedLoan,
+        amount: Number(amount),
+        reference,
+      }),
+    onSuccess: (response: any) => {
+      // Invalidate everything that shows loan or payment data
+      qc.invalidateQueries({ queryKey: ["my-loans"] });
+      qc.invalidateQueries({ queryKey: ["my-transactions"] });
+      qc.invalidateQueries({ queryKey: ["loan-balance", selectedLoan] });
+      qc.invalidateQueries({ queryKey: ["admin-loans"] });
 
-    // Show balance in toast
-    const balance = response?.balance
-    if (balance) {
-      if (balance.outstanding === 0) {
-        toast.success('🎉 Loan fully repaid! Your account is clear.')
+      // Show balance in toast
+      const balance = response?.balance;
+      if (balance) {
+        if (balance.outstanding === 0) {
+          toast.success("🎉 Loan fully repaid! Your account is clear.");
+        } else {
+          toast.success(
+            `Payment recorded. Outstanding: ${formatCurrency(balance.outstanding)}`,
+          );
+        }
       } else {
-        toast.success(
-          `Payment recorded. Outstanding: ${formatCurrency(balance.outstanding)}`
-        )
+        toast.success("Payment recorded successfully!");
       }
-    } else {
-      toast.success('Payment recorded successfully!')
-    }
 
-    setSelectedLoan('')
-    setAmount('')
-    setReference(`REF-${Date.now()}`)
-    onClose()
-  },
-  onError: (err: any) => toast.error(err.response?.data?.message ?? 'Payment failed'),
-})
+      setSelectedLoan("");
+      setAmount("");
+      setReference(`REF-${Date.now()}`);
+      onClose();
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message ?? "Payment failed"),
+  });
   const selectedLoanData = loans.find((l) => l.id === selectedLoan);
 
   return (
@@ -424,10 +426,27 @@ export const Dashboard: React.FC = () => {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
 
+  // Total ever borrowed (for reference)
   const totalBorrowed = loans
     .filter((l) => ["DISBURSED", "CLOSED"].includes(l.status))
     .reduce((s, l) => s + Number(l.amount), 0);
-  const activeLoans = loans.filter((l) => l.status === "DISBURSED").length;
+
+  // Active = DISBURSED and still has outstanding balance
+  const activeLoans = loans.filter(
+    (l) => l.status === "DISBURSED" && (l as any).balance?.outstanding > 0,
+  ).length;
+
+  // Outstanding = sum of what's still owed, not total borrowed
+  const totalOutstanding = loans
+    .filter((l) => l.status === "DISBURSED")
+    .reduce((s, l) => s + ((l as any).balance?.outstanding ?? 0), 0);
+
+  // Total repaid across all loans
+  const totalRepaid = loans.reduce(
+    (s, l) => s + ((l as any).balance?.totalPaid ?? 0),
+    0,
+  );
+
   const pendingLoans = loans.filter((l) =>
     ["PENDING", "UNDER_REVIEW"].includes(l.status),
   ).length;
@@ -530,27 +549,28 @@ export const Dashboard: React.FC = () => {
       {/* Stats */}
       <div className="stats-grid">
         <StatCard
-          label="Total Borrowed"
-          value={totalBorrowed > 0 ? formatCurrency(totalBorrowed) : "—"}
-          sub="All time"
+          label="Outstanding Balance"
+          value={
+            totalOutstanding > 0 ? formatCurrency(totalOutstanding) : "MWK 0"
+          }
+          sub="What you still owe"
+          accent={totalOutstanding > 0 ? "var(--danger)" : "var(--teal)"}
           icon={<TrendingUp size={16} />}
+        />
+        <StatCard
+          label="Total Repaid"
+          value={formatCurrency(totalRepaid)}
+          sub="Across all loans"
+          accent="#16A34A"
+          icon={<CheckCircle size={16} />}
         />
         <StatCard
           label="Active Loans"
           value={String(activeLoans)}
-          sub="Currently disbursed"
+          sub="With outstanding balance"
           accent="var(--blue)"
-          icon={<CheckCircle size={16} />}
+          icon={<Clock size={16} />}
         />
-        <div style={{ gridColumn: "span 2" }}>
-          <StatCard
-            label="Pending Review"
-            value={String(pendingLoans)}
-            sub="Awaiting decision"
-            accent="var(--warning)"
-            icon={<Clock size={16} />}
-          />
-        </div>
       </div>
 
       {/* Recent loans */}
