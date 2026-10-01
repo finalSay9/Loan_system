@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -18,6 +18,15 @@ export class PaymentsService {
       where: { id: dto.loanId, userId, status: 'DISBURSED' },
     });
     if (!loan) throw new NotFoundException('Active loan not found');
+
+    // At the top of makeRepayment, before the $transaction
+const existingTx = await this.prisma.transaction.findUnique({
+  where: { reference: dto.reference },
+})
+if (existingTx) {
+  throw new ConflictException('A payment with this reference already exists')
+}
+
 
     return this.prisma.$transaction(async (tx) => {
       // Record the transaction
@@ -44,6 +53,8 @@ export class PaymentsService {
         });
       }
 
+      
+
       await tx.auditLog.create({
         data: {
           actorId: userId,
@@ -53,6 +64,31 @@ export class PaymentsService {
           afterState: { amount: dto.amount, reference: dto.reference },
         },
       });
+
+      // Check if all installments are now paid
+const remainingSchedules = await tx.repaymentSchedule.count({
+  where: { loanId: dto.loanId, status: 'PENDING' },
+})
+
+if (remainingSchedules === 0) {
+  await tx.loan.update({
+    where: { id: dto.loanId },
+    data: {
+      status: 'CLOSED',
+      version: { increment: 1 },
+    },
+  })
+
+  await tx.auditLog.create({
+    data: {
+      actorId: userId,
+      action: 'LOAN_CLOSED',
+      entityType: 'LOAN',
+      entityId: dto.loanId,
+      afterState: { reason: 'All installments paid' },
+    },
+  })
+}
 
       return { message: 'Payment recorded successfully', data: transaction };
     });
