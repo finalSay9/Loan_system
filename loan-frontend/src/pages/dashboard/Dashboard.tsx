@@ -175,24 +175,39 @@ const PaymentModal: React.FC<{
   const activeLoans = loans.filter((l) => l.status === "DISBURSED");
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () =>
-      api.post("/payments/repay", {
-        loanId: selectedLoan,
-        amount: Number(amount),
-        reference,
-      }),
-    onSuccess: () => {
-      toast.success("Payment recorded successfully!");
-      qc.invalidateQueries({ queryKey: ["my-loans"] });
-      qc.invalidateQueries({ queryKey: ["my-transactions"] });
-      setSelectedLoan("");
-      setAmount("");
-      onClose();
-    },
-    onError: (err: any) =>
-      toast.error(err.response?.data?.message ?? "Payment failed"),
-  });
+  mutationFn: () => api.post('/payments/repay', {
+    loanId: selectedLoan,
+    amount: Number(amount),
+    reference,
+  }),
+  onSuccess: (response: any) => {
+    // Invalidate everything that shows loan or payment data
+    qc.invalidateQueries({ queryKey: ['my-loans'] })
+    qc.invalidateQueries({ queryKey: ['my-transactions'] })
+    qc.invalidateQueries({ queryKey: ['loan-balance', selectedLoan] })
+    qc.invalidateQueries({ queryKey: ['admin-loans'] })
 
+    // Show balance in toast
+    const balance = response?.balance
+    if (balance) {
+      if (balance.outstanding === 0) {
+        toast.success('🎉 Loan fully repaid! Your account is clear.')
+      } else {
+        toast.success(
+          `Payment recorded. Outstanding: ${formatCurrency(balance.outstanding)}`
+        )
+      }
+    } else {
+      toast.success('Payment recorded successfully!')
+    }
+
+    setSelectedLoan('')
+    setAmount('')
+    setReference(`REF-${Date.now()}`)
+    onClose()
+  },
+  onError: (err: any) => toast.error(err.response?.data?.message ?? 'Payment failed'),
+})
   const selectedLoanData = loans.find((l) => l.id === selectedLoan);
 
   return (

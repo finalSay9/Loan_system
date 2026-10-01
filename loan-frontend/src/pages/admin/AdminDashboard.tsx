@@ -54,9 +54,11 @@ export const AdminDashboard: React.FC = () => {
 
   // ── Data fetching ──
   const { data: loansData } = useQuery({
-    queryKey: ["admin-loans"],
-    queryFn: () => getAllLoans(),
-  });
+  queryKey: ['admin-loans'],
+  queryFn: () => getAllLoans(),
+  refetchInterval: 30000, // refetch every 30 seconds
+  refetchIntervalInBackground: true,
+})
   const loans = loansData?.data ?? [];
 
   const { data: statsData } = useQuery({

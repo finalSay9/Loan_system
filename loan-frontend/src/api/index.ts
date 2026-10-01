@@ -42,3 +42,6 @@ export const getAllUsers = (params?: { search?: string }) =>
 
 export const getUserById = (id: string) =>
   api.get<any>(`/users/${id}`).then((r) => r.data);
+
+export const getLoanBalance = (loanId: string) =>
+  api.get(`/payments/balance/${loanId}`).then(r => r.data)

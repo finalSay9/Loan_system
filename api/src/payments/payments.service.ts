@@ -29,82 +29,95 @@ if (existingTx) {
 
 
     return this.prisma.$transaction(async (tx) => {
-      // Record the transaction
-      const transaction = await tx.transaction.create({
-        data: {
-          loanId: dto.loanId,
-          type: 'REPAYMENT',
-          amount: dto.amount,
-          reference: dto.reference,
-          providerRef: `MAN-${Date.now()}`,
-        },
-      });
-
-      // Find the earliest unpaid schedule
-      const schedule = await tx.repaymentSchedule.findFirst({
-        where: { loanId: dto.loanId, status: 'PENDING' },
-        orderBy: { dueDate: 'asc' },
-      });
-
-      if (schedule) {
-  const amountDue = Number(schedule.amountDue)
-  const amountPaid = Number(dto.amount)
-
-  if (amountPaid < amountDue) {
-    // Partial payment — record it but don't mark as fully paid
-    await tx.repaymentSchedule.update({
-      where: { id: schedule.id },
-      data: { amountPaid },
-      // status stays PENDING
-    })
-  } else {
-    // Full payment
-    await tx.repaymentSchedule.update({
-      where: { id: schedule.id },
-      data: { amountPaid, status: 'PAID' },
-    })
-  }
-}
-
-      
-
-      await tx.auditLog.create({
-        data: {
-          actorId: userId,
-          action: 'LOAN_REPAYMENT',
-          entityType: 'LOAN',
-          entityId: dto.loanId,
-          afterState: { amount: dto.amount, reference: dto.reference },
-        },
-      });
-
-      // Check if all installments are now paid
-const remainingSchedules = await tx.repaymentSchedule.count({
-  where: { loanId: dto.loanId, status: 'PENDING' },
-})
-
-if (remainingSchedules === 0) {
-  await tx.loan.update({
-    where: { id: dto.loanId },
+  // 1. Record the transaction
+  const transaction = await tx.transaction.create({
     data: {
-      status: 'CLOSED',
-      version: { increment: 1 },
+      loanId: dto.loanId,
+      type: 'REPAYMENT',
+      amount: dto.amount,
+      reference: dto.reference,
+      providerRef: `MAN-${Date.now()}`,
     },
   })
 
+  // 2. Find earliest unpaid installment
+  const schedule = await tx.repaymentSchedule.findFirst({
+    where: { loanId: dto.loanId, status: 'PENDING' },
+    orderBy: { dueDate: 'asc' },
+  })
+
+  if (schedule) {
+    const amountDue = Number(schedule.amountDue)
+    const amountPaid = Number(dto.amount)
+
+    await tx.repaymentSchedule.update({
+      where: { id: schedule.id },
+      data: {
+        amountPaid,
+        status: amountPaid >= amountDue ? 'PAID' : 'PENDING',
+      },
+    })
+  }
+
+  // 3. Audit log
   await tx.auditLog.create({
     data: {
       actorId: userId,
-      action: 'LOAN_CLOSED',
+      action: 'LOAN_REPAYMENT',
       entityType: 'LOAN',
       entityId: dto.loanId,
-      afterState: { reason: 'All installments paid' },
+      afterState: { amount: dto.amount, reference: dto.reference },
     },
   })
-}
 
-      return { message: 'Payment recorded successfully', data: transaction };
-    });
+  // 4. Check remaining installments
+  const remaining = await tx.repaymentSchedule.count({
+    where: { loanId: dto.loanId, status: 'PENDING' },
+  })
+
+  // 5. Close loan if fully paid
+  if (remaining === 0) {
+    await tx.loan.update({
+      where: { id: dto.loanId },
+      data: { status: 'CLOSED', version: { increment: 1 } },
+    })
+
+    await tx.auditLog.create({
+      data: {
+        actorId: userId,
+        action: 'LOAN_CLOSED',
+        entityType: 'LOAN',
+        entityId: dto.loanId,
+        afterState: { reason: 'All installments paid' },
+      },
+    })
+  }
+
+  // 6. Calculate updated balance
+  const updatedSchedules = await tx.repaymentSchedule.findMany({
+    where: { loanId: dto.loanId },
+    orderBy: { dueDate: 'asc' },
+  })
+
+  const totalDue = updatedSchedules.reduce((s, r) => s + Number(r.amountDue), 0)
+  const totalPaid = updatedSchedules.reduce((s, r) => s + Number(r.amountPaid), 0)
+  const outstanding = totalDue - totalPaid
+
+  return {
+    message: remaining === 0
+      ? 'Payment recorded — loan fully repaid!'
+      : 'Payment recorded successfully',
+    data: transaction,
+    loanClosed: remaining === 0,
+    balance: {
+      totalDue,
+      totalPaid,
+      outstanding,
+      progressPercent: Math.round((totalPaid / totalDue) * 100),
+      remainingInstallments: remaining,
+    },
+  }
+})
   }
 
   async getMyTransactions(userId: string) {

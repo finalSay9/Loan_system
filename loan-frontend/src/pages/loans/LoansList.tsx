@@ -53,28 +53,39 @@ export const LoansList: React.FC = () => {
         </div>
       ) : (
         <div className="flex-col gap-3" style={{ display: 'flex' }}>
-          {loans.map(loan => {
-            const cfg = loanStatusConfig[loan.status as LoanStatus]
-            return (
-              <Link key={loan.id} to={`/loans/${loan.id}`} className="loan-card loan-card-left" style={{ borderLeftColor: cfg.color }}>
-                <div className="flex items-start justify-between gap-3">
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="flex items-center gap-2 wrap mb-1">
-                      <span className="font-bold text-text" style={{ fontSize: 16 }}>{formatCurrency(Number(loan.amount))}</span>
-                      <Badge status={loan.status} label={cfg.label} color={cfg.color} bg={cfg.bg} border={cfg.border} />
-                    </div>
-                    <p className="text-sm text-silver truncate">{loan.purpose}</p>
-                    <div className="flex gap-3 mt-1 wrap">
-                      <span className="text-xs text-dim">{loan.termMonths} months</span>
-                      <span className="text-xs text-dim">{Number(loan.interestRate)}% p.a.</span>
-                      <span className="text-xs text-dim">{formatDate(loan.createdAt)}</span>
-                    </div>
-                  </div>
-                  <ArrowRight size={15} style={{ color: 'var(--dim)', flexShrink: 0, marginTop: 3 }} />
-                </div>
-              </Link>
-            )
-          })}
+         {loans.map(loan => {
+  const cfg = loanStatusConfig[loan.status as LoanStatus]
+  const isClosed = loan.status === 'CLOSED'
+
+  return (
+    <Link key={loan.id} to={`/loans/${loan.id}`}
+      className="loan-card loan-card-left"
+      style={{
+        borderLeftColor: cfg.color,
+        opacity: isClosed ? 0.6 : 1,       // ← dim closed loans
+      }}>
+      <div className="flex items-start justify-between gap-3">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p className="font-bold text-text" style={{ fontSize: 16 }}>
+            {formatCurrency(Number(loan.amount))}
+          </p>
+          <p className="text-sm text-silver truncate">{loan.purpose}</p>
+          <div className="flex gap-3 mt-1 wrap">
+            <span className="text-xs text-dim">{loan.termMonths} months</span>
+            <span className="text-xs text-dim">{Number(loan.interestRate)}% p.a.</span>
+            <span className="text-xs text-dim">{formatDate(loan.createdAt)}</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+          <Badge status={loan.status} label={cfg.label} color={cfg.color} bg={cfg.bg} border={cfg.border} />
+          {isClosed && (
+            <span style={{ fontSize: 10, color: 'var(--dim)' }}>Fully repaid</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  )
+})}
         </div>
       )}
     </div>

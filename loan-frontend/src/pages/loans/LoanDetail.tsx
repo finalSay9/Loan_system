@@ -7,6 +7,7 @@ import { LoanTimeline } from '@/components/ui/LoanTimeline'
 import { getMyLoanById } from '@/api'
 import { formatCurrency, formatDate, loanStatusConfig } from '@/utils'
 import type { LoanStatus } from '@/types'
+import { LoanBalance } from '@/components/ui/LoanBalance'
 
 export const LoanDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -54,6 +55,10 @@ export const LoanDetail: React.FC = () => {
 
       <div className="card">
         <p className="section-label">Loan Details</p>
+        
+{(loan.status === 'DISBURSED' || loan.status === 'CLOSED') && (
+  <LoanBalance loanId={loan.id} />
+)}
         <div className="summary-grid" style={{ gap: 16 }}>
           {fields.map(({ label, value }) => (
             <div key={label}>
