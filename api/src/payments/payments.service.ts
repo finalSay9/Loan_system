@@ -114,4 +114,53 @@ if (remainingSchedules === 0) {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  /**
+   * getting the loan
+   * balance
+   */
+  async getLoanBalance(userId: string, loanId: string) {
+    //confirm loan belong to the user
+    const loan = await this.prisma.loan.findFirst({
+      where: {id: loanId, userId},
+      include: {
+        repayments: {
+          orderBy: {dueDate: "asc"}
+        }
+      }
+    })
+
+    if(!loan) {
+      throw new NotFoundException("loan not found")
+    };
+
+    const totalDue = loan.repayments.reduce(
+      (s, r) => s + Number(r.amountDue), 0
+    )
+
+    const totalPaid = loan.repayments.reduce(
+      (s, r) => s + Number(r.amountPaid), 0
+    )
+
+    const outstanding = totalDue - totalPaid;
+    const paidInstallments = loan.repayments.filter(r => r.status === "PAID").length;
+    const totalInstallments = loan.repayments.length;
+    const nextInstallment = loan.repayments.find(r => r.status === "PENDING") ?? null;
+
+    return {
+    loanId,
+    totalDue,
+    totalPaid,
+    outstanding,
+    progressPercent: totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0,
+    paidInstallments,
+    totalInstallments,
+    nextInstallment,
+    schedule: loan.repayments,
+  }
+
+  }
+
+
+
 }
