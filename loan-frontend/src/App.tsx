@@ -18,8 +18,14 @@ import {
   AdminBorrowers,
   AdminBorrowerDetail,
 } from "@/pages/admin/AdminBorrowers";
+import { useSocket } from './hooks/useSocket'
 
 
+
+const SocketProvider = ({ children }: { children: React.ReactNode }) => {
+  useSocket()
+  return <>{children}</>
+}
 
 const qc = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 1000 * 30 } }
@@ -49,6 +55,7 @@ export default function App() {
   return (
     <QueryClientProvider client={qc}>
       <BrowserRouter>
+      <SocketProvider> 
         <Routes>
           <Route
             path="/admin/dashboard"
@@ -178,6 +185,7 @@ export default function App() {
             }
           />
         </Routes>
+        </SocketProvider> 
       </BrowserRouter>
       <Toaster
         position="top-right"
