@@ -5,6 +5,7 @@ from django.urls import path
 from django.shortcuts import redirect, get_object_or_404
 from django.http import HttpRequest
 from .models import User
+from django.db import connection
 
 
 
@@ -52,7 +53,7 @@ class UserAdmin(admin.ModelAdmin):
     actions = ['bulk_approve_kyc', 'bulk_reject_kyc']
 
     def bulk_approve_kyc(self, request, queryset):
-        from django.db import connection
+        
         ids = [str(u.id) for u in queryset.filter(kyc_status='PENDING')]
         if not ids:
             self.message_user(request, 'No pending users selected.', messages.WARNING)
@@ -78,7 +79,7 @@ class UserAdmin(admin.ModelAdmin):
         self.message_user(request, f'✗ {len(ids)} borrower(s) KYC rejected.', messages.ERROR)
 
 
-        
+
     def kyc_badge(self, obj):
         colours = {
             'PENDING':  ('orange', '⏳'),
@@ -133,9 +134,9 @@ class UserAdmin(admin.ModelAdmin):
         # Use raw SQL with explicit UUID cast to avoid type mismatch
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT id, name, kyc_status FROM users WHERE id = %s::uuid",
+                "SELECT id, name, kyc_status FROM users WHERE id = %s",
                 [str(user_id)]
-            )
+                    )
             row = cursor.fetchone()
 
         if not row:
@@ -150,7 +151,7 @@ class UserAdmin(admin.ModelAdmin):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "UPDATE users SET kyc_status = 'VERIFIED' WHERE id = %s::uuid",
+                "UPDATE users SET kyc_status = 'VERIFIED' WHERE id = %s",
                 [user_id_str]
             )
 
@@ -170,8 +171,8 @@ class UserAdmin(admin.ModelAdmin):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT id, name, kyc_status FROM users WHERE id = %s::uuid",
-                [str(user_id)]
+                "UPDATE users SET kyc_status = 'REJECTED' WHERE id = %s",
+                [user_id_str]
             )
             row = cursor.fetchone()
 
@@ -187,7 +188,7 @@ class UserAdmin(admin.ModelAdmin):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "UPDATE users SET kyc_status = 'REJECTED' WHERE id = %s::uuid",
+                "UPDATE users SET kyc_status = 'REJECTED' WHERE id = %s",
                 [user_id_str]
             )
 
