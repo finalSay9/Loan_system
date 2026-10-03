@@ -775,13 +775,11 @@ export const AdminBorrowerDetail: React.FC = () => {
   });
 
   const loans: any[] = borrower?.loans ?? [];
-  const totalBorrowed = loans.reduce(
-    (s: number, l: any) => s + Number(l.amount),
-    0,
-  );
-  const totalRepaid = loans
-    .filter((l: any) => l.status === "CLOSED")
-    .reduce((s: number, l: any) => s + Number(l.amount), 0);
+  
+// ✅ fix — use actual repayment data
+const totalBorrowed = loans.reduce((s: number, l: any) => s + Number(l.amount), 0)
+const totalRepaid = loans.reduce((s: number, l: any) => s + (l.balance?.totalPaid ?? 0), 0)
+const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.outstanding ?? 0), 0)
   const activeLoans = loans.filter((l: any) => l.status === "DISBURSED").length;
   const kycStyle = KYC_STYLE[borrower?.kycStatus] ?? KYC_STYLE["PENDING"];
 

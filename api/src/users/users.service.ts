@@ -88,18 +88,55 @@ export class UsersService {
 
   //finding user by id
   async findUserById(userId: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      loans: {
+        select: {
+          id: true,
+          amount: true,
+          purpose: true,
+          status: true,
+          termMonths: true,
+          interestRate: true,
+          createdAt: true,
+          disbursedAt: true,
+          repayments: {
+            select: {
+              amountDue: true,
+              amountPaid: true,
+              status: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
 
-    //if the user is not found
-    if (!user) {
-      throw new NotFoundException('user not found');
-    }
-    //stripping off the password
-    const { passwordHash, ...result } = user;
-    return result;
+  if (!user) {
+    throw new NotFoundException('User not found')
   }
+
+  const { passwordHash, ...result } = user
+
+  // Attach balance summary to each loan
+  const loansWithBalance = result.loans.map((loan: any) => {
+    const totalDue = loan.repayments.reduce((s: number, r: any) => s + Number(r.amountDue), 0)
+    const totalPaid = loan.repayments.reduce((s: number, r: any) => s + Number(r.amountPaid), 0)
+    return {
+      ...loan,
+      balance: {
+        totalDue,
+        totalPaid,
+        outstanding: totalDue - totalPaid,
+        progressPercent: totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0,
+      },
+    }
+  })
+
+  return { ...result, loans: loansWithBalance }
+}
 
   //find user by email
   async findUserByEmail(email: string) {

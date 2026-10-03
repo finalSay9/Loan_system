@@ -1,5 +1,6 @@
 dist
 .env
+.venv
 node_modules
 *.log
 *.tmp
