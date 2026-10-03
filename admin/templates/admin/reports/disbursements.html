@@ -1,0 +1,65 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>{{ title }}</h1>
+
+<form method="get" style="margin-bottom:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <label style="font-size:13px">
+    From
+    <input type="date" name="start" value="{{ start_date }}"
+      style="margin-left:6px;padding:5px 8px;border:1px solid #d1d5db;border-radius:4px">
+  </label>
+  <label style="font-size:13px">
+    To
+    <input type="date" name="end" value="{{ end_date }}"
+      style="margin-left:6px;padding:5px 8px;border:1px solid #d1d5db;border-radius:4px">
+  </label>
+  <button type="submit"
+    style="padding:6px 16px;background:#1a3a6b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px">
+    Filter
+  </button>
+  <a href="export/?start={{ start_date }}&end={{ end_date }}"
+    style="padding:6px 16px;background:#16a34a;color:white;border-radius:4px;text-decoration:none;font-size:13px">
+    ↓ Export CSV
+  </a>
+</form>
+
+<!-- Summary cards -->
+<div style="display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap">
+  <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:16px 24px;min-width:160px">
+    <div style="font-size:11px;color:#1E40AF;text-transform:uppercase;letter-spacing:.05em">Loans Disbursed</div>
+    <div style="font-size:28px;font-weight:700;color:#1E3A8A;margin-top:4px">{{ totals.loan_count }}</div>
+  </div>
+  <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:16px 24px;min-width:200px">
+    <div style="font-size:11px;color:#15803D;text-transform:uppercase;letter-spacing:.05em">Total Disbursed (MWK)</div>
+    <div style="font-size:28px;font-weight:700;color:#14532D;margin-top:4px">{{ totals.total_disbursed|floatformat:2 }}</div>
+  </div>
+</div>
+
+<table style="width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+  <thead>
+    <tr style="background:#F9FAFB">
+      <th style="padding:12px 16px;text-align:left;border-bottom:1px solid #E5E7EB;font-size:12px;color:#6B7280;text-transform:uppercase;letter-spacing:.04em">Date</th>
+      <th style="padding:12px 16px;text-align:right;border-bottom:1px solid #E5E7EB;font-size:12px;color:#6B7280;text-transform:uppercase;letter-spacing:.04em">Loans</th>
+      <th style="padding:12px 16px;text-align:right;border-bottom:1px solid #E5E7EB;font-size:12px;color:#6B7280;text-transform:uppercase;letter-spacing:.04em">Total Disbursed (MWK)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr onmouseover="this.style.background='#F9FAFB'" onmouseout="this.style.background='white'">
+      <td style="padding:12px 16px;border-bottom:1px solid #F3F4F6;font-weight:500">{{ row.date }}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #F3F4F6;text-align:right">{{ row.loan_count }}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #F3F4F6;text-align:right;font-weight:600;color:#1a3a6b">{{ row.total_disbursed|floatformat:2 }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3" style="padding:40px;text-align:center;color:#9CA3AF">No disbursements in this period</td></tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr style="background:#F9FAFB;font-weight:700">
+      <td style="padding:12px 16px">TOTAL</td>
+      <td style="padding:12px 16px;text-align:right">{{ totals.loan_count }}</td>
+      <td style="padding:12px 16px;text-align:right;color:#16A34A">{{ totals.total_disbursed|floatformat:2 }}</td>
+    </tr>
+  </tfoot>
+</table>
+{% endblock %}
