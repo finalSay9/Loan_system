@@ -52,27 +52,33 @@ class UserAdmin(admin.ModelAdmin):
     actions = ['bulk_approve_kyc', 'bulk_reject_kyc']
 
     def bulk_approve_kyc(self, request, queryset):
-        pending = queryset.filter(kyc_status='PENDING')
-        count = pending.count()
-        pending.update(kyc_status='VERIFIED')
-        self.message_user(
-            request,
-            f'✓ {count} borrower(s) KYC approved.',
-            messages.SUCCESS
-        )
-    bulk_approve_kyc.short_description = '✓ Approve KYC for selected borrowers'
+        from django.db import connection
+        ids = [str(u.id) for u in queryset.filter(kyc_status='PENDING')]
+        if not ids:
+            self.message_user(request, 'No pending users selected.', messages.WARNING)
+            return
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE users SET kyc_status = 'VERIFIED' WHERE id = ANY(%s::uuid[])",
+                [ids]
+            )
+        self.message_user(request, f'✓ {len(ids)} borrower(s) KYC approved.', messages.SUCCESS)
 
     def bulk_reject_kyc(self, request, queryset):
-        pending = queryset.filter(kyc_status='PENDING')
-        count = pending.count()
-        pending.update(kyc_status='REJECTED')
-        self.message_user(
-            request,
-            f'✗ {count} borrower(s) KYC rejected.',
-            messages.ERROR
-        )
-    bulk_reject_kyc.short_description = '✗ Reject KYC for selected borrowers'
+        from django.db import connection
+        ids = [str(u.id) for u in queryset.filter(kyc_status='PENDING')]
+        if not ids:
+            self.message_user(request, 'No pending users selected.', messages.WARNING)
+            return
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE users SET kyc_status = 'REJECTED' WHERE id = ANY(%s::uuid[])",
+                [ids]
+            )
+        self.message_user(request, f'✗ {len(ids)} borrower(s) KYC rejected.', messages.ERROR)
 
+
+        
     def kyc_badge(self, obj):
         colours = {
             'PENDING':  ('orange', '⏳'),
@@ -122,55 +128,79 @@ class UserAdmin(admin.ModelAdmin):
     # ── Action handlers ───────────────────────────────────
 
     def kyc_approve(self, request: HttpRequest, user_id):
-        user = get_object_or_404(User, pk=user_id)
+        from django.db import connection
 
-        if user.kyc_status != 'PENDING':
-            messages.warning(
-                request,
-                f'{user.name} KYC is already {user.kyc_status}.'
+        # Use raw SQL with explicit UUID cast to avoid type mismatch
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, name, kyc_status FROM users WHERE id = %s::uuid",
+                [str(user_id)]
             )
+            row = cursor.fetchone()
+
+        if not row:
+            messages.error(request, 'User not found.')
             return redirect('admin:users_user_changelist')
 
-        User.objects.filter(pk=user_id).update(kyc_status='VERIFIED')
+        user_id_str, user_name, kyc_status = str(row[0]), row[1], row[2]
 
-        # Write to audit log
+        if kyc_status != 'PENDING':
+            messages.warning(request, f'{user_name} KYC is already {kyc_status}.')
+            return redirect('admin:users_user_changelist')
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE users SET kyc_status = 'VERIFIED' WHERE id = %s::uuid",
+                [user_id_str]
+            )
+
         self._write_audit(
-            request, user_id=str(user_id),
+            request, user_id=user_id_str,
             action='KYC_APPROVED',
             actor_name=request.user.username,
             before='PENDING', after='VERIFIED'
         )
 
-        messages.success(
-            request,
-            f'✓ {user.name} KYC approved successfully.'
-        )
+        messages.success(request, f'✓ {user_name} KYC approved successfully.')
         return redirect('admin:users_user_changelist')
 
-    def kyc_reject(self, request: HttpRequest, user_id):
-        user = get_object_or_404(User, pk=user_id)
 
-        if user.kyc_status != 'PENDING':
-            messages.warning(
-                request,
-                f'{user.name} KYC is already {user.kyc_status}.'
+    def kyc_reject(self, request: HttpRequest, user_id):
+        from django.db import connection
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, name, kyc_status FROM users WHERE id = %s::uuid",
+                [str(user_id)]
             )
+            row = cursor.fetchone()
+
+        if not row:
+            messages.error(request, 'User not found.')
             return redirect('admin:users_user_changelist')
 
-        User.objects.filter(pk=user_id).update(kyc_status='REJECTED')
+        user_id_str, user_name, kyc_status = str(row[0]), row[1], row[2]
+
+        if kyc_status != 'PENDING':
+            messages.warning(request, f'{user_name} KYC is already {kyc_status}.')
+            return redirect('admin:users_user_changelist')
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE users SET kyc_status = 'REJECTED' WHERE id = %s::uuid",
+                [user_id_str]
+            )
 
         self._write_audit(
-            request, user_id=str(user_id),
+            request, user_id=user_id_str,
             action='KYC_REJECTED',
             actor_name=request.user.username,
             before='PENDING', after='REJECTED'
         )
 
-        messages.error(
-            request,
-            f'✗ {user.name} KYC rejected.'
-        )
+        messages.error(request, f'✗ {user_name} KYC rejected.')
         return redirect('admin:users_user_changelist')
+
 
     def _write_audit(self, request, user_id, action, actor_name, before, after):
         """Write directly to the audit_logs table that NestJS also uses."""
