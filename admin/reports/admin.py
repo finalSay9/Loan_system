@@ -15,4 +15,38 @@ class FinancialReportAdmin(admin.ModelAdmin):
     directly because Prisma owns the underlying tables.
     """
 
-    
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_staff
+
+
+class DisbursmentReportAdmin(FinancialReportAdmin):
+    """
+    Admin view for the disbursment report
+
+    """
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '',
+                self.admin_site.admin_view(self.disbursment_report_view),
+                name='disbursment_report',
+            ), 
+            path(
+                'export',
+                self.admin_site.admin_view(self.export_disbursment_report),
+                name='disbursment_report_export',
+            ),
+
+        ]
+        return custom_urls + urls
