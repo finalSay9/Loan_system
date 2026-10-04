@@ -1,3 +1,4 @@
+import axios from 'axios';
 import api from './client'
 import type { AuthResponse, Loan, User, RepaymentSchedule } from '@/types'
 
@@ -45,3 +46,26 @@ export const getUserById = (id: string) =>
 
 export const getLoanBalance = (loanId: string) =>
   api.get(`/payments/balance/${loanId}`).then(r => r.data)
+
+
+
+// Backoffice API — hits Django on port 8000
+const backoffice = axios.create({ baseURL: '/backoffice/api' })
+
+backoffice.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+export const getReportSummary = () =>
+  backoffice.get('/reports/summary/').then(r => r.data)
+
+export const getDisbursementReport = (params?: { start?: string; end?: string }) =>
+  backoffice.get('/reports/disbursements/', { params }).then(r => r.data)
+
+export const getCollectionsReport = (params?: { start?: string; end?: string }) =>
+  backoffice.get('/reports/collections/', { params }).then(r => r.data)
+
+export const getDelinquencyReport = () =>
+  backoffice.get('/reports/delinquency/').then(r => r.data)

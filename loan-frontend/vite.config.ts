@@ -14,6 +14,10 @@ export default defineConfig({
         target: 'http://localhost:3200',
         changeOrigin: true,
       },
+       '/backoffice': {
+      target: 'http://localhost:8000',  // Django
+      changeOrigin: true,
+    },
     },
   },
 })
