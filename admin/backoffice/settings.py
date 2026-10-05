@@ -5,6 +5,7 @@ import os
 
 load_dotenv()
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'change-this-in-production')
@@ -88,10 +89,14 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3200',  # NestJS API
 ]
 
+
+
+
+
 # ── Django REST Framework ─────────────────────────────────
 REST_FRAMEWORK = {
-     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'backoffice.authentication.PrismaUserJWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
