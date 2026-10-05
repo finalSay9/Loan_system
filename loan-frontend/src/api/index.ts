@@ -30,13 +30,17 @@ export const getLoanSchedule = (id: string) =>
 
 // Admin
 export const getAllLoans = (params?: any) =>
-  api.get<{ data: Loan[]; meta: any }>('/loans', { params }).then(r => r.data)
+  api.get<{ data: any[]; meta: any }>('/loans', { params }).then(r => r.data)
+
 
 export const updateLoanStatus = (id: string, data: { status: string; reason?: string }) =>
   api.patch(`/loans/${id}/status`, data).then(r => r.data)
 
-export const disburseLoan = (id: string) =>
-  api.post(`/loans/${id}/disburse-loan`).then(r => r.data)
+
+export const adminGetLoanById = (id: string) =>
+  api.get<any>(`/loans/admin/${id}`).then(r => r.data)
+
+
 
 export const getAllUsers = (params?: { search?: string }) =>
   api.get<{ data: any[]; meta: any }>("/users", { params }).then((r) => r.data);
@@ -46,6 +50,28 @@ export const getUserById = (id: string) =>
 
 export const getLoanBalance = (loanId: string) =>
   api.get(`/payments/balance/${loanId}`).then(r => r.data)
+
+
+// Explicit lifecycle actions — replace the old updateLoanStatus
+export const startLoanReview = (id: string) =>
+  api.patch(`/loans/${id}/review`).then(r => r.data)
+
+export const approveLoan = (id: string) =>
+  api.patch(`/loans/${id}/approve`).then(r => r.data)
+
+export const rejectLoan = (id: string, reason: string) =>
+  api.patch(`/loans/${id}/reject`, { reason }).then(r => r.data)
+
+export const disburseLoan = (id: string) =>
+  api.post(`/loans/${id}/disburse`).then(r => r.data)
+
+export const closeLoan = (id: string) =>
+  api.patch(`/loans/${id}/close`).then(r => r.data)
+
+export const defaultLoan = (id: string) =>
+  api.patch(`/loans/${id}/default`).then(r => r.data)
+
+
 
 
 
