@@ -136,17 +136,62 @@ exports.Prisma.UserScalarFieldEnum = {
   avatarUrl: 'avatarUrl'
 };
 
+exports.Prisma.LoanProductScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  description: 'description',
+  minAmount: 'minAmount',
+  maxAmount: 'maxAmount',
+  interestRate: 'interestRate',
+  interestType: 'interestType',
+  minTermValue: 'minTermValue',
+  maxTermValue: 'maxTermValue',
+  termUnit: 'termUnit',
+  repaymentFrequency: 'repaymentFrequency',
+  processingFeeType: 'processingFeeType',
+  processingFeeAmount: 'processingFeeAmount',
+  processingFeeRate: 'processingFeeRate',
+  lateFeeType: 'lateFeeType',
+  lateFeeAmount: 'lateFeeAmount',
+  lateFeeRate: 'lateFeeRate',
+  gracePeriodDays: 'gracePeriodDays',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.LoanScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  productId: 'productId',
   amount: 'amount',
   purpose: 'purpose',
   notes: 'notes',
   status: 'status',
   interestRate: 'interestRate',
-  termMonths: 'termMonths',
+  interestType: 'interestType',
+  termValue: 'termValue',
+  termUnit: 'termUnit',
+  numberOfInstallments: 'numberOfInstallments',
+  repaymentFrequency: 'repaymentFrequency',
+  processingFeeType: 'processingFeeType',
+  processingFeeAmount: 'processingFeeAmount',
+  processingFeeRate: 'processingFeeRate',
+  lateFeeType: 'lateFeeType',
+  lateFeeAmount: 'lateFeeAmount',
+  lateFeeRate: 'lateFeeRate',
+  gracePeriodDays: 'gracePeriodDays',
+  totalInterest: 'totalInterest',
+  totalFees: 'totalFees',
+  totalPayable: 'totalPayable',
   rejectionReason: 'rejectionReason',
+  approvedAt: 'approvedAt',
+  approvedById: 'approvedById',
   disbursedAt: 'disbursedAt',
+  disbursedById: 'disbursedById',
+  firstPaymentDueAt: 'firstPaymentDueAt',
+  maturityDate: 'maturityDate',
+  closedAt: 'closedAt',
   version: 'version',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
@@ -160,12 +205,20 @@ exports.Prisma.RepaymentScheduleScalarFieldEnum = {
   dueDate: 'dueDate',
   principalAmount: 'principalAmount',
   interestAmount: 'interestAmount',
+  feeAmount: 'feeAmount',
+  penaltyAmount: 'penaltyAmount',
+  baseAmountDue: 'baseAmountDue',
   amountDue: 'amountDue',
   amountPaid: 'amountPaid',
+  principalPaid: 'principalPaid',
+  interestPaid: 'interestPaid',
+  feePaid: 'feePaid',
+  penaltyPaid: 'penaltyPaid',
   remainingBalance: 'remainingBalance',
-  penalty: 'penalty',
   status: 'status',
-  createdAt: 'createdAt'
+  paidAt: 'paidAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.TransactionScalarFieldEnum = {
@@ -175,6 +228,23 @@ exports.Prisma.TransactionScalarFieldEnum = {
   amount: 'amount',
   reference: 'reference',
   providerRef: 'providerRef',
+  principalAmount: 'principalAmount',
+  interestAmount: 'interestAmount',
+  feeAmount: 'feeAmount',
+  penaltyAmount: 'penaltyAmount',
+  idempotencyKey: 'idempotencyKey',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.PaymentAllocationScalarFieldEnum = {
+  id: 'id',
+  transactionId: 'transactionId',
+  scheduleId: 'scheduleId',
+  principalAmount: 'principalAmount',
+  interestAmount: 'interestAmount',
+  feeAmount: 'feeAmount',
+  penaltyAmount: 'penaltyAmount',
   createdAt: 'createdAt'
 };
 
@@ -238,20 +308,67 @@ exports.KycStatus = exports.$Enums.KycStatus = {
   REJECTED: 'REJECTED'
 };
 
+exports.InterestType = exports.$Enums.InterestType = {
+  FLAT: 'FLAT',
+  REDUCING_BALANCE: 'REDUCING_BALANCE'
+};
+
+exports.TermUnit = exports.$Enums.TermUnit = {
+  WEEKS: 'WEEKS',
+  MONTHS: 'MONTHS'
+};
+
+exports.RepaymentFrequency = exports.$Enums.RepaymentFrequency = {
+  WEEKLY: 'WEEKLY',
+  BIWEEKLY: 'BIWEEKLY',
+  MONTHLY: 'MONTHLY'
+};
+
+exports.FeeType = exports.$Enums.FeeType = {
+  FIXED: 'FIXED',
+  PERCENTAGE: 'PERCENTAGE'
+};
+
+exports.LateFeeType = exports.$Enums.LateFeeType = {
+  FIXED: 'FIXED',
+  PERCENTAGE: 'PERCENTAGE'
+};
+
 exports.LoanStatus = exports.$Enums.LoanStatus = {
   PENDING: 'PENDING',
   UNDER_REVIEW: 'UNDER_REVIEW',
   APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
   DISBURSED: 'DISBURSED',
   CLOSED: 'CLOSED',
-  DEFAULTED: 'DEFAULTED'
+  DEFAULTED: 'DEFAULTED',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.InstallmentStatus = exports.$Enums.InstallmentStatus = {
+  PENDING: 'PENDING',
+  PARTIALLY_PAID: 'PARTIALLY_PAID',
+  PAID: 'PAID',
+  OVERDUE: 'OVERDUE',
+  WAIVED: 'WAIVED'
+};
+
+exports.TransactionType = exports.$Enums.TransactionType = {
+  DISBURSEMENT: 'DISBURSEMENT',
+  REPAYMENT: 'REPAYMENT',
+  PENALTY: 'PENALTY',
+  FEE: 'FEE',
+  REFUND: 'REFUND',
+  ADJUSTMENT: 'ADJUSTMENT'
 };
 
 exports.Prisma.ModelName = {
   User: 'User',
+  LoanProduct: 'LoanProduct',
   Loan: 'Loan',
   RepaymentSchedule: 'RepaymentSchedule',
   Transaction: 'Transaction',
+  PaymentAllocation: 'PaymentAllocation',
   AuditLog: 'AuditLog',
   Feedback: 'Feedback'
 };

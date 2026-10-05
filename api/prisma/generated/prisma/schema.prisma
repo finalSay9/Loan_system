@@ -1,11 +1,16 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "./generated/prisma"
+  provider     = "prisma-client-js"
+  output       = "./generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
 }
+
+// ============================================================
+// ENUMS
+// ============================================================
 
 enum Role {
   BORROWER
@@ -25,114 +30,466 @@ enum LoanStatus {
   PENDING
   UNDER_REVIEW
   APPROVED
+  REJECTED
   DISBURSED
   CLOSED
   DEFAULTED
+  CANCELLED
 }
 
-model User {
-  id           String    @id @default(uuid())
-  name         String
-  address      String
-  occupation   String
-  phone        String    @unique
-  email        String?   @unique
-  passwordHash String    @map("password_hash")
-  role         Role      @default(BORROWER)
-  kycStatus    KycStatus @default(PENDING) @map("kyc_status")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at") // soft delete
-  avatarUrl    String?   @map("avatar_url")
+enum RepaymentFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
 
-  loans     Loan[]
+enum InterestType {
+  FLAT
+  REDUCING_BALANCE
+}
+
+enum InstallmentStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  WAIVED
+}
+
+enum TransactionType {
+  DISBURSEMENT
+  REPAYMENT
+  PENALTY
+  FEE
+  REFUND
+  ADJUSTMENT
+}
+
+enum FeeType {
+  FIXED
+  PERCENTAGE
+}
+
+enum LateFeeType {
+  FIXED
+  PERCENTAGE
+}
+
+enum TermUnit {
+  WEEKS
+  MONTHS
+}
+
+// ============================================================
+// USER
+// ============================================================
+
+model User {
+  id String @id @default(uuid())
+
+  name       String
+  address    String
+  occupation String
+
+  phone String  @unique
+  email String? @unique
+
+  passwordHash String @map("password_hash")
+
+  role      Role      @default(BORROWER)
+  kycStatus KycStatus @default(PENDING) @map("kyc_status")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  avatarUrl String? @map("avatar_url")
+
+  // Borrower loans
+  loans Loan[]
+
+  // Audit logs performed by this user
   auditLogs AuditLog[]
-  feedback  Feedback[]
+
+  // Feedback submitted by this user
+  feedback Feedback[]
+
+  // Loans approved by this user
+  approvedLoans Loan[] @relation("LoanApprovedBy")
+
+  // Loans disbursed by this user
+  disbursedLoans Loan[] @relation("LoanDisbursedBy")
 
   @@map("users")
 }
 
-model Loan {
-  id              String     @id @default(uuid())
-  userId          String     @map("user_id")
-  amount          Decimal    @db.Decimal(15, 2)
-  purpose         String
-  notes           String?
-  status          LoanStatus @default(PENDING)
-  interestRate    Decimal    @default(24.00) @map("interest_rate") @db.Decimal(5, 2)
-  termMonths      Int        @map("term_months")
-  rejectionReason String?    @map("rejection_reason")
-  disbursedAt     DateTime?  @map("disbursed_at") // ← add this
-  version         Int        @default(0)
-  createdAt       DateTime   @default(now()) @map("created_at")
-  updatedAt       DateTime   @updatedAt @map("updated_at")
-  deletedAt       DateTime?  @map("deleted_at")
+// ============================================================
+// LOAN PRODUCT
+// ============================================================
 
-  user         User                @relation(fields: [userId], references: [id])
+model LoanProduct {
+  id String @id @default(uuid())
+
+  name        String
+  description String?
+
+  // Principal limits
+  minAmount Decimal @db.Decimal(15, 2)
+  maxAmount Decimal @db.Decimal(15, 2)
+
+  // Interest configuration
+  interestRate Decimal      @db.Decimal(5, 2)
+  interestType InterestType @map("interest_type")
+
+  // Term configuration
+  minTermValue Int      @map("min_term_value")
+  maxTermValue Int      @map("max_term_value")
+  termUnit     TermUnit @map("term_unit")
+
+  // Repayment frequency
+  repaymentFrequency RepaymentFrequency @map("repayment_frequency")
+
+  // Processing fee
+  processingFeeType   FeeType @default(FIXED) @map("processing_fee_type")
+  processingFeeAmount Decimal @default(0) @map("processing_fee_amount") @db.Decimal(15, 2)
+  processingFeeRate   Decimal @default(0) @map("processing_fee_rate") @db.Decimal(5, 2)
+
+  // Late fee
+  lateFeeType   LateFeeType @default(FIXED) @map("late_fee_type")
+  lateFeeAmount Decimal     @default(0) @map("late_fee_amount") @db.Decimal(15, 2)
+  lateFeeRate   Decimal     @default(0) @map("late_fee_rate") @db.Decimal(5, 2)
+
+  // Number of days after due date before late fees apply
+  gracePeriodDays Int @default(0) @map("grace_period_days")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  loans Loan[]
+
+  @@index([isActive])
+  @@index([name])
+  @@map("loan_products")
+}
+
+// ============================================================
+// LOAN
+// ============================================================
+
+model Loan {
+  id String @id @default(uuid())
+
+  // Borrower
+  userId String @map("user_id")
+
+  // Product used when the loan was created
+  productId String @map("product_id")
+
+  // Requested principal
+  amount Decimal @db.Decimal(15, 2)
+
+  purpose String
+  notes   String?
+
+  status LoanStatus @default(PENDING)
+
+  // ==========================================================
+  // SNAPSHOT OF PRODUCT TERMS
+  //
+  // These values MUST NOT change if the LoanProduct changes.
+  // ==========================================================
+
+  interestRate Decimal      @map("interest_rate") @db.Decimal(5, 2)
+  interestType InterestType @map("interest_type")
+
+  termValue Int      @map("term_value")
+  termUnit  TermUnit @map("term_unit")
+
+  numberOfInstallments Int @map("number_of_installments")
+
+  repaymentFrequency RepaymentFrequency @map("repayment_frequency")
+
+  // Processing fee snapshot
+  processingFeeType   FeeType @map("processing_fee_type")
+  processingFeeAmount Decimal @default(0) @map("processing_fee_amount") @db.Decimal(15, 2)
+  processingFeeRate   Decimal @default(0) @map("processing_fee_rate") @db.Decimal(5, 2)
+
+  // Late fee snapshot
+  lateFeeType   LateFeeType @map("late_fee_type")
+  lateFeeAmount Decimal     @default(0) @map("late_fee_amount") @db.Decimal(15, 2)
+  lateFeeRate   Decimal     @default(0) @map("late_fee_rate") @db.Decimal(5, 2)
+
+  gracePeriodDays Int @default(0) @map("grace_period_days")
+
+  // ==========================================================
+  // FINANCIAL TOTALS
+  // ==========================================================
+
+  totalInterest Decimal @default(0) @map("total_interest") @db.Decimal(15, 2)
+
+  totalFees Decimal @default(0) @map("total_fees") @db.Decimal(15, 2)
+
+  totalPayable Decimal @default(0) @map("total_payable") @db.Decimal(15, 2)
+
+  // ==========================================================
+  // LIFECYCLE
+  // ==========================================================
+
+  rejectionReason String? @map("rejection_reason")
+
+  approvedAt   DateTime? @map("approved_at")
+  approvedById String?   @map("approved_by_id")
+
+  disbursedAt   DateTime? @map("disbursed_at")
+  disbursedById String?   @map("disbursed_by_id")
+
+  firstPaymentDueAt DateTime? @map("first_payment_due_at")
+  maturityDate      DateTime? @map("maturity_date")
+  closedAt          DateTime? @map("closed_at")
+
+  // Optimistic concurrency control
+  version Int @default(0)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // ==========================================================
+  // RELATIONS
+  // ==========================================================
+
+  user    User        @relation(fields: [userId], references: [id])
+  product LoanProduct @relation(fields: [productId], references: [id])
+
+  approvedBy  User? @relation("LoanApprovedBy", fields: [approvedById], references: [id])
+  disbursedBy User? @relation("LoanDisbursedBy", fields: [disbursedById], references: [id])
+
   repayments   RepaymentSchedule[]
   transactions Transaction[]
+  feedback     Feedback[]
 
+  @@index([userId])
+  @@index([productId])
+  @@index([status])
+  @@index([approvedById])
+  @@index([disbursedById])
+  @@index([firstPaymentDueAt])
+  @@index([maturityDate])
   @@map("loans")
 }
 
+// ============================================================
+// REPAYMENT SCHEDULE
+// ============================================================
+
 model RepaymentSchedule {
-  id                String   @id @default(uuid())
-  loanId            String   @map("loan_id")
-  installmentNumber Int      @map("installment_number")
-  dueDate           DateTime @map("due_date")
-  principalAmount   Decimal  @map("principal_amount") @db.Decimal(15, 2)
-  interestAmount    Decimal  @map("interest_amount") @db.Decimal(15, 2)
-  amountDue         Decimal  @map("amount_due") @db.Decimal(15, 2)
-  amountPaid        Decimal  @default(0) @map("amount_paid") @db.Decimal(15, 2)
-  remainingBalance  Decimal  @map("remaining_balance") @db.Decimal(15, 2)
-  penalty           Decimal  @default(0) @db.Decimal(15, 2)
-  status            String   @default("PENDING")
-  createdAt         DateTime @default(now()) @map("created_at")
+  id String @id @default(uuid())
+
+  loanId String @map("loan_id")
+
+  installmentNumber Int @map("installment_number")
+
+  dueDate DateTime @map("due_date")
+
+  // ==========================================================
+  // ORIGINAL INSTALLMENT COMPONENTS
+  // ==========================================================
+
+  principalAmount Decimal @map("principal_amount") @db.Decimal(15, 2)
+
+  interestAmount Decimal @map("interest_amount") @db.Decimal(15, 2)
+
+  feeAmount Decimal @default(0) @map("fee_amount") @db.Decimal(15, 2)
+
+  // Penalty starts at zero and may be added later.
+  penaltyAmount Decimal @default(0) @map("penalty_amount") @db.Decimal(15, 2)
+
+  // Original scheduled amount excluding penalties added later.
+  baseAmountDue Decimal @map("base_amount_due") @db.Decimal(15, 2)
+
+  // Current total amount due, including penalties.
+  amountDue Decimal @map("amount_due") @db.Decimal(15, 2)
+
+  // ==========================================================
+  // PAYMENT TRACKING
+  // ==========================================================
+
+  amountPaid Decimal @default(0) @map("amount_paid") @db.Decimal(15, 2)
+
+  principalPaid Decimal @default(0) @map("principal_paid") @db.Decimal(15, 2)
+
+  interestPaid Decimal @default(0) @map("interest_paid") @db.Decimal(15, 2)
+
+  feePaid Decimal @default(0) @map("fee_paid") @db.Decimal(15, 2)
+
+  penaltyPaid Decimal @default(0) @map("penalty_paid") @db.Decimal(15, 2)
+
+  // Remaining principal balance after this installment.
+  remainingBalance Decimal @map("remaining_balance") @db.Decimal(15, 2)
+
+  status InstallmentStatus @default(PENDING)
+
+  paidAt DateTime? @map("paid_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   loan Loan @relation(fields: [loanId], references: [id])
 
+  allocations PaymentAllocation[]
+
+  @@unique([loanId, installmentNumber])
+  @@index([loanId])
+  @@index([dueDate])
+  @@index([status])
+  @@index([loanId, status])
   @@map("repayment_schedules")
 }
 
+// ============================================================
+// TRANSACTION
+// ============================================================
+
 model Transaction {
-  id          String   @id @default(uuid())
-  loanId      String   @map("loan_id")
-  type        String // DISBURSEMENT | REPAYMENT | PENALTY
-  amount      Decimal  @db.Decimal(15, 2)
-  reference   String   @unique // your internal ref
-  providerRef String?  @map("provider_ref") // mobile money ref
-  createdAt   DateTime @default(now()) @map("created_at")
+  id String @id @default(uuid())
+
+  loanId String @map("loan_id")
+
+  type TransactionType
+
+  // Total monetary value of the transaction
+  amount Decimal @db.Decimal(15, 2)
+
+  // Internal/reference number
+  reference String @unique
+
+  // External provider reference
+  providerRef String? @map("provider_ref")
+
+  // ==========================================================
+  // TRANSACTION BREAKDOWN
+  //
+  // These provide fast reporting.
+  // Detailed allocation is stored in PaymentAllocation.
+  // ==========================================================
+
+  principalAmount Decimal? @map("principal_amount") @db.Decimal(15, 2)
+
+  interestAmount Decimal? @map("interest_amount") @db.Decimal(15, 2)
+
+  feeAmount Decimal? @map("fee_amount") @db.Decimal(15, 2)
+
+  penaltyAmount Decimal? @map("penalty_amount") @db.Decimal(15, 2)
+
+  // ==========================================================
+  // IDEMPOTENCY
+  // ==========================================================
+
+  idempotencyKey String? @unique @map("idempotency_key")
+
+  // Provider/payment metadata
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   loan Loan @relation(fields: [loanId], references: [id])
 
+  allocations PaymentAllocation[]
+
+  @@index([loanId])
+  @@index([type])
+  @@index([providerRef])
+  @@index([createdAt])
   @@map("transactions")
 }
 
+// ============================================================
+// PAYMENT ALLOCATION
+// ============================================================
+
+model PaymentAllocation {
+  id String @id @default(uuid())
+
+  transactionId String @map("transaction_id")
+  scheduleId    String @map("schedule_id")
+
+  // Amount allocated toward each component
+  principalAmount Decimal @default(0) @map("principal_amount") @db.Decimal(15, 2)
+
+  interestAmount Decimal @default(0) @map("interest_amount") @db.Decimal(15, 2)
+
+  feeAmount Decimal @default(0) @map("fee_amount") @db.Decimal(15, 2)
+
+  penaltyAmount Decimal @default(0) @map("penalty_amount") @db.Decimal(15, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  transaction Transaction       @relation(fields: [transactionId], references: [id])
+  schedule    RepaymentSchedule @relation(fields: [scheduleId], references: [id])
+
+  // Prevent the same transaction from creating
+  // multiple allocations against the same installment.
+  @@unique([transactionId, scheduleId])
+  @@index([transactionId])
+  @@index([scheduleId])
+  @@map("payment_allocations")
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+
 model AuditLog {
-  id          String   @id @default(uuid())
-  actorId     String   @map("actor_id")
-  action      String
-  entityType  String   @map("entity_type")
-  entityId    String   @map("entity_id")
-  beforeState Json?    @map("before_state")
-  afterState  Json?    @map("after_state")
-  ipAddress   String?  @map("ip_address")
-  timestamp   DateTime @default(now())
+  id String @id @default(uuid())
+
+  actorId String @map("actor_id")
+
+  action String
+
+  entityType String @map("entity_type")
+
+  entityId String @map("entity_id")
+
+  beforeState Json? @map("before_state")
+
+  afterState Json? @map("after_state")
+
+  ipAddress String? @map("ip_address")
+
+  timestamp DateTime @default(now())
 
   actor User @relation(fields: [actorId], references: [id])
 
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([timestamp])
   @@map("audit_logs")
 }
 
+// ============================================================
+// FEEDBACK
+// ============================================================
+
 model Feedback {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  loanId    String?  @map("loan_id")
-  rating    Int // 1-4: 1=Poor, 2=Neutral, 3=Good, 4=Excellent
-  comment   String?
+  id String @id @default(uuid())
+
+  userId String @map("user_id")
+
+  loanId String? @map("loan_id")
+
+  rating Int
+
+  comment String?
+
   createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id])
 
+  loan Loan? @relation(fields: [loanId], references: [id])
+
+  @@index([userId])
+  @@index([loanId])
   @@map("feedback")
 }
