@@ -5,6 +5,9 @@ import { Button, Input } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
 import { registerUser } from '@/api'
 import toast from 'react-hot-toast'
+import { AuthLayout } from './AuthLayout'
+
+
 
 export const Register: React.FC = () => {
   const navigate = useNavigate()
@@ -47,57 +50,41 @@ export const Register: React.FC = () => {
   }
 
   return (
-    <div className="auth-shell">
-      <div className="auth-bar" />
-      <div className="auth-body">
-        <div className="auth-logo">
-          <div className="logo-mark" style={{ width: 40, height: 40, borderRadius: 10 }}><span style={{ fontSize: 13 }}>LF</span></div>
-          <div>
-            <div className="logo-name" style={{ fontSize: 18 }}>LoanFlow</div>
-            <div className="logo-sub">Financial Services</div>
-          </div>
-        </div>
-
-        <div className="auth-card fade-in">
-          {/* Steps */}
-          <div className="steps">
-            <div className={`step-dot ${step > 1 ? 'done' : step === 1 ? 'active' : 'idle'}`}>1</div>
-            <div className={`step-line ${step > 1 ? 'done' : 'idle'}`} />
-            <div className={`step-dot ${step === 2 ? 'active' : 'idle'}`}>2</div>
-          </div>
-
-          <h1 className="font-black mb-1" style={{ fontSize: 20, color: 'var(--text)' }}>
-            {step === 1 ? 'Create account' : 'Complete profile'}
-          </h1>
-          <p className="text-sm text-silver mb-4">
-            {step === 1 ? 'Step 1 of 2 — Personal information' : 'Step 2 of 2 — Security & details'}
-          </p>
-
-          {step === 1 ? (
-            <div className="flex-col gap-4" style={{ display: 'flex' }}>
-              <Input label="Full Name" placeholder="John Banda" icon={<User size={15} />} value={form.name} onChange={up('name')} error={errors.name} />
-              <Input label="Phone Number" type="tel" placeholder="+265991234567" icon={<Phone size={15} />} value={form.phone} onChange={up('phone')} error={errors.phone} />
-              <Input label="Email (optional)" type="email" placeholder="john@example.com" icon={<Mail size={15} />} value={form.email} onChange={up('email')} error={errors.email} />
-              <Button onClick={() => validateStep1() && setStep(2)} size="lg" style={{ marginTop: 8 }}>Continue →</Button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex-col gap-4" style={{ display: 'flex' }}>
-              <Input label="Password" type="password" placeholder="Min 8 chars, mixed case + symbols" icon={<Lock size={15} />} value={form.password} onChange={up('password')} error={errors.password} />
-              <Input label="Address" placeholder="Area 49, Lilongwe" icon={<MapPin size={15} />} value={form.address} onChange={up('address')} error={errors.address} />
-              <Input label="Occupation" placeholder="Business owner, Teacher…" icon={<Briefcase size={15} />} value={form.occupation} onChange={up('occupation')} error={errors.occupation} />
-              <div className="flex gap-3 mt-2">
-                <Button type="button" variant="outline" onClick={() => setStep(1)} style={{ flex: 1, padding: '12px' }}>← Back</Button>
-                <Button type="submit" loading={loading} style={{ flex: 1, padding: '12px' }}>Create account</Button>
-              </div>
-            </form>
-          )}
-        </div>
-
-        <p className="text-sm text-silver" style={{ marginTop: 20, textAlign: 'center' }}>
-          Already have an account?{' '}
-          <Link to="/login" style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600 }}>Sign in</Link>
-        </p>
+    <AuthLayout>
+      <div className="auth-progress" aria-label={`Step ${step} of 2`}>
+        <i className="on" />
+        <i className={step === 2 ? 'on' : ''} />
       </div>
-    </div>
+
+      <h1>{step === 1 ? 'Create your account' : 'Finish your profile'}</h1>
+      <p className="lead">
+        {step === 1 ? 'Step 1 of 2: your personal details' : 'Step 2 of 2: security and background'}
+      </p>
+
+      {step === 1 ? (
+        <div className="auth-stack">
+          <Input label="Full name" placeholder="John Banda" icon={<User size={16} />} value={form.name} onChange={up('name')} error={errors.name} />
+          <Input label="Phone number" type="tel" placeholder="+265991234567" icon={<Phone size={16} />} value={form.phone} onChange={up('phone')} error={errors.phone} />
+          <Input label="Email (optional)" type="email" placeholder="john@example.com" icon={<Mail size={16} />} value={form.email} onChange={up('email')} error={errors.email} />
+          <div className="auth-actions">
+            <Button onClick={() => validateStep1() && setStep(2)}>Continue</Button>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="auth-stack">
+          <Input label="Password" type="password" placeholder="Min 8 chars, mixed case + symbols" icon={<Lock size={16} />} value={form.password} onChange={up('password')} error={errors.password} />
+          <Input label="Address" placeholder="Area 49, Lilongwe" icon={<MapPin size={16} />} value={form.address} onChange={up('address')} error={errors.address} />
+          <Input label="Occupation" placeholder="Business owner, Teacher…" icon={<Briefcase size={16} />} value={form.occupation} onChange={up('occupation')} error={errors.occupation} />
+          <div className="auth-actions">
+            <Button type="button" variant="outline" className="secondary" onClick={() => setStep(1)}>Back</Button>
+            <Button type="submit" loading={loading}>Create account</Button>
+          </div>
+        </form>
+      )}
+
+      <p className="auth-switch">
+        Already have an account? <Link to="/login">Sign in</Link>
+      </p>
+    </AuthLayout>
   )
 }

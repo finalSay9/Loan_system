@@ -11,7 +11,6 @@ export const formatDate = (date: string | null | undefined) => {
 }
 export const formatPhone = (phone: string) => phone
 
-
 export const loanStatusConfig: Record<LoanStatus, { label: string; color: string; bg: string; border: string; step: number }> = {
   PENDING:      { label: 'Pending',      color: '#FAAD14', bg: '#FAAD1415', border: '#FAAD1440', step: 1 },
   UNDER_REVIEW: { label: 'Under Review', color: '#00C9A7', bg: '#00C9A715', border: '#00C9A740', step: 2 },
@@ -23,6 +22,8 @@ export const loanStatusConfig: Record<LoanStatus, { label: string; color: string
   CANCELLED:    { label: 'Cancelled',    color: '#8899AA', bg: '#8899AA15', border: '#8899AA40', step: 5 },
 }
 
+// Order of the normal loan journey, used by LoanTimeline
+export const LOAN_STEPS: LoanStatus[] = ['PENDING', 'UNDER_REVIEW', 'APPROVED', 'DISBURSED', 'CLOSED']
 
 export const getInitials = (name: string) =>
   name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)

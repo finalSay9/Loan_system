@@ -15,9 +15,21 @@ export const getMe = () =>
   api.get<User>('/auth/me').then(r => r.data)
 
 // Loans
-export const applyForLoan = (data: {
-  amount: number; termMonths: number; purpose: string; notes?: string
-}) => api.post<Loan>('/loans', data).then(r => r.data)
+
+export const getLoanProducts = () =>
+  api.get('/loan-products').then(r => r.data)
+
+
+export interface ApplyForLoanRequest {
+  productId: string
+  amount: number
+  termValue: number
+  purpose: string
+  notes?: string
+}
+
+export const applyForLoan = (data: ApplyForLoanRequest) =>
+  api.post<Loan>('/loans', data).then(r => r.data)
 
 export const getMyLoans = (params?: { status?: string; page?: number; limit?: number }) =>
   api.get<{ data: Loan[]; meta: any }>('/loans/my', { params }).then(r => r.data)

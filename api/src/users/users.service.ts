@@ -1,53 +1,67 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { ConfigService } from '@nestjs/config';
-import { CreateUserDto } from './dto/create-user.dto';
 
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
+
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-    private config: ConfigService,
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly config: ConfigService,
   ) {}
 
+  /**
+   * Create a new borrower account.
+   */
   async createUser(dto: CreateUserDto) {
-    // Dual uniqueness check — phone is required, email is optional
+    // Phone is required, email is optional.
+    // Check both unique fields before attempting the insert
+    // so we can return useful domain errors.
     const clauses: { phone?: string; email?: string }[] = [
       { phone: dto.phone },
     ];
+
     if (dto.email) {
       clauses.push({ email: dto.email });
     }
 
     const existingUser = await this.prisma.user.findFirst({
-      where: { OR: clauses },
+      where: {
+        OR: clauses,
+      },
     });
 
     if (existingUser) {
       if (existingUser.phone === dto.phone) {
         throw new ConflictException('Phone number already exists');
       }
+
       if (dto.email && existingUser.email === dto.email) {
         throw new ConflictException('Email already exists');
       }
     }
 
-    // Hash password
+    // Never store the user's plain-text password.
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    // Strip plain password before hitting the database
+    // Remove password before constructing the Prisma data object.
     const { password, ...userFields } = dto;
 
-    // Create user — select only safe fields back
     const user = await this.prisma.user.create({
       data: {
         ...userFields,
         passwordHash,
       },
+
       select: {
         id: true,
         name: true,
@@ -61,13 +75,14 @@ export class UsersService {
       },
     });
 
-    // Audit log — every user creation must be recorded
+    // Every user creation is audited.
     await this.prisma.auditLog.create({
       data: {
         actorId: user.id,
         action: 'USER_CREATED',
         entityType: 'User',
         entityId: user.id,
+
         afterState: {
           id: user.id,
           phone: user.phone,
@@ -76,8 +91,10 @@ export class UsersService {
       },
     });
 
-    // Sign JWT
-    const token = await this.signToken(user.id, user.email ?? '');
+    const token = await this.signToken(
+      user.id,
+      user.email ?? '',
+    );
 
     return {
       message: 'User created successfully',
@@ -86,140 +103,358 @@ export class UsersService {
     };
   }
 
-  //finding user by id
-  async findUserById(userId: string): Promise<any> {
-  const user = await this.prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      loans: {
-        select: {
-          id: true,
-          amount: true,
-          purpose: true,
-          status: true,
-          termMonths: true,
-          interestRate: true,
-          createdAt: true,
-          disbursedAt: true,
-          repayments: {
-            select: {
-              amountDue: true,
-              amountPaid: true,
-              status: true,
+  /**
+   * Find a user by ID together with their loans and repayment information.
+   *
+   * Used by admin/backoffice views where a user's loan history
+   * and repayment balance are required.
+   */
+  async findUserById(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        occupation: true,
+        phone: true,
+        email: true,
+        role: true,
+        kycStatus: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
+        avatarUrl: true,
+
+        loans: {
+          select: {
+            id: true,
+            amount: true,
+            purpose: true,
+            status: true,
+
+            // New loan schema
+            termValue: true,
+            termUnit: true,
+
+            interestRate: true,
+            interestType: true,
+            repaymentFrequency: true,
+
+            numberOfInstallments: true,
+
+            totalInterest: true,
+            totalFees: true,
+            totalPayable: true,
+
+            createdAt: true,
+            approvedAt: true,
+            disbursedAt: true,
+            closedAt: true,
+
+            repayments: {
+              select: {
+                id: true,
+                installmentNumber: true,
+                dueDate: true,
+
+                principalAmount: true,
+                interestAmount: true,
+                feeAmount: true,
+                penaltyAmount: true,
+
+                baseAmountDue: true,
+                amountDue: true,
+
+                amountPaid: true,
+                principalPaid: true,
+                interestPaid: true,
+                feePaid: true,
+                penaltyPaid: true,
+
+                remainingBalance: true,
+                status: true,
+                paidAt: true,
+              },
+
+              orderBy: {
+                installmentNumber: 'asc',
+              },
             },
           },
-        },
-        orderBy: { createdAt: 'desc' },
-      },
-    },
-  })
 
-  if (!user) {
-    throw new NotFoundException('User not found')
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    /**
+     * Prisma Decimal values need to be converted to numbers
+     * before exposing them to the frontend.
+     */
+    const loansWithBalance = user.loans.map((loan) => {
+      const totalDue = loan.repayments.reduce(
+        (sum, repayment) => sum + Number(repayment.amountDue),
+        0,
+      );
+
+      const totalPaid = loan.repayments.reduce(
+        (sum, repayment) => sum + Number(repayment.amountPaid),
+        0,
+      );
+
+      const outstanding = Math.max(
+        totalDue - totalPaid,
+        0,
+      );
+
+      const progressPercent =
+        totalDue > 0
+          ? Math.min(
+              Math.round((totalPaid / totalDue) * 100),
+              100,
+            )
+          : 0;
+
+      return {
+        ...loan,
+
+        // Convert Prisma Decimal values to JSON-friendly numbers.
+        amount: Number(loan.amount),
+        interestRate: Number(loan.interestRate),
+
+        totalInterest: Number(loan.totalInterest),
+        totalFees: Number(loan.totalFees),
+        totalPayable: Number(loan.totalPayable),
+
+        repayments: loan.repayments.map((repayment) => ({
+          ...repayment,
+
+          principalAmount: Number(repayment.principalAmount),
+          interestAmount: Number(repayment.interestAmount),
+          feeAmount: Number(repayment.feeAmount),
+          penaltyAmount: Number(repayment.penaltyAmount),
+
+          baseAmountDue: Number(repayment.baseAmountDue),
+          amountDue: Number(repayment.amountDue),
+
+          amountPaid: Number(repayment.amountPaid),
+          principalPaid: Number(repayment.principalPaid),
+          interestPaid: Number(repayment.interestPaid),
+          feePaid: Number(repayment.feePaid),
+          penaltyPaid: Number(repayment.penaltyPaid),
+
+          remainingBalance: Number(
+            repayment.remainingBalance,
+          ),
+        })),
+
+        balance: {
+          totalDue,
+          totalPaid,
+          outstanding,
+          progressPercent,
+        },
+      };
+    });
+
+    return {
+      ...user,
+      loans: loansWithBalance,
+    };
   }
 
-  const { passwordHash, ...result } = user
-
-  // Attach balance summary to each loan
-  const loansWithBalance = result.loans.map((loan: any) => {
-    const totalDue = loan.repayments.reduce((s: number, r: any) => s + Number(r.amountDue), 0)
-    const totalPaid = loan.repayments.reduce((s: number, r: any) => s + Number(r.amountPaid), 0)
-    return {
-      ...loan,
-      balance: {
-        totalDue,
-        totalPaid,
-        outstanding: totalDue - totalPaid,
-        progressPercent: totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0,
-      },
-    }
-  })
-
-  return { ...result, loans: loansWithBalance }
-}
-
-  //find user by email
+  /**
+   * Find a user by email.
+   */
   async findUserByEmail(email: string) {
-    // FIXED: Using findFirst to prevent runtime issues with optional types
     const user = await this.prisma.user.findFirst({
-      where: { email: email },
+      where: {
+        email,
+      },
     });
-    //if user with that email dont exist
+
     if (!user) {
-      throw new NotFoundException('user with this email doesnt exist');
+      throw new NotFoundException(
+        'User with this email does not exist',
+      );
     }
 
-    //striping the password
     const { passwordHash, ...result } = user;
+
     return result;
   }
 
-  private async signToken(userId: string, email: string): Promise<string> {
-    const payload = { sub: userId, email };
+  /**
+   * Generate JWT access token.
+   */
+  private async signToken(
+    userId: string,
+    email: string,
+  ): Promise<string> {
+    const payload = {
+      sub: userId,
+      email,
+    };
+
     return this.jwtService.signAsync(payload, {
       secret: this.config.get<string>('JWT_SECRET'),
-      expiresIn: (this.config.get<string>('JWT_EXPIRES_IN') ?? '7d') as any,
+
+      expiresIn: (this.config.get<string>(
+        'JWT_EXPIRES_IN',
+      ) ?? '7d') as any,
     });
   }
 
   /**
-   * the profile picture of the
-   * user
+   * Update user's avatar.
    */
-  async updateAvatar(userId: string, avatarUrl: string) {
+  async updateAvatar(
+    userId: string,
+    avatarUrl: string,
+  ) {
     const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { avatarUrl },
-      select: { id: true, avatarUrl: true },
+      where: {
+        id: userId,
+      },
+
+      data: {
+        avatarUrl,
+      },
+
+      select: {
+        id: true,
+        avatarUrl: true,
+      },
     });
-    return { message: 'Avatar updated', data: user };
+
+    return {
+      message: 'Avatar updated',
+      data: user,
+    };
   }
 
-  async getAllUsers(query: { page?: number; limit?: number; search?: string }) {
-  const page = Number(query.page ?? 1)
-  const limit = Number(query.limit ?? 50)
-  const search = query.search ?? ''
+  /**
+   * Get paginated borrowers.
+   *
+   * Includes their loan history for admin/backoffice views.
+   */
+  async getAllUsers(query: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }) {
+    const page = Math.max(
+      Number(query.page ?? 1),
+      1,
+    );
 
-  const users = await this.prisma.user.findMany({
-    where: {
-      role: 'BORROWER',
-      deletedAt: null,
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { phone: { contains: search } },
-        ],
-      }),
-    },
-    select: {
-      id: true,
-      name: true,
-      phone: true,
-      email: true,
-      address: true,
-      occupation: true,
-      avatarUrl: true,
-      kycStatus: true,
-      createdAt: true,
-      loans: {
-        select: {
-          id: true,
-          amount: true,
-          purpose: true,
-          status: true,
-          termMonths: true,
-          interestRate: true,
-          createdAt: true,
-          disbursedAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
+    const limit = Math.min(
+      Math.max(Number(query.limit ?? 50), 1),
+      100,
+    );
+
+    const search = query.search?.trim() ?? '';
+
+    const users = await this.prisma.user.findMany({
+      where: {
+        role: 'BORROWER',
+        deletedAt: null,
+
+        ...(search
+          ? {
+              OR: [
+                {
+                  name: {
+                    contains: search,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  phone: {
+                    contains: search,
+                  },
+                },
+                {
+                  email: {
+                    contains: search,
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            }
+          : {}),
       },
-    },
-    orderBy: { createdAt: 'desc' },
-    skip: (page - 1) * limit,
-    take: limit,
-  })
 
-  return { data: users, meta: { page, limit, count: users.length } }
-}
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        address: true,
+        occupation: true,
+        avatarUrl: true,
+        kycStatus: true,
+        role: true,
+        createdAt: true,
+
+        loans: {
+          select: {
+            id: true,
+            amount: true,
+            purpose: true,
+            status: true,
+
+            // New schema
+            termValue: true,
+            termUnit: true,
+
+            interestRate: true,
+            interestType: true,
+            repaymentFrequency: true,
+
+            numberOfInstallments: true,
+
+            totalInterest: true,
+            totalFees: true,
+            totalPayable: true,
+
+            createdAt: true,
+            approvedAt: true,
+            disbursedAt: true,
+            closedAt: true,
+          },
+
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+
+      orderBy: {
+        createdAt: 'desc',
+      },
+
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      data: users,
+      meta: {
+        page,
+        limit,
+        count: users.length,
+      },
+    };
+  }
 }
