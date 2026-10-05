@@ -1,40 +1,74 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import {
-  IsDecimal,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
-  Max,
+  IsUUID,
   Min,
 } from 'class-validator';
+
 import { Type } from 'class-transformer';
 
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+} from '@nestjs/swagger';
 
 export class CreateLoanDto {
   @ApiProperty({
-    example: 50000.0,
-    description: 'Loan amount requested in MWK',
+    example: '7d9f5c1e-5c6d-4c3d-8f2e-123456789abc',
+    description:
+      'ID of the active loan product selected by the borrower',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  productId!: string;
+
+  @ApiProperty({
+    example: 50000,
+    description:
+      'Loan amount requested in MWK. The amount must fall within the selected product limits.',
   })
   @Type(() => Number)
-  @Min(1000, { message: 'Minimum loan amount is MWK 1,000' })
-  @Max(5000000, { message: 'Maximum loan amount is MWK 5,000,000' })
+  @Min(1, {
+    message: 'Loan amount must be greater than zero',
+  })
   amount!: number;
 
-  @ApiProperty({ example: 12, description: 'Loan term in months' })
+  @ApiProperty({
+    example: 12,
+    description:
+      'Requested loan term. The unit (weeks or months) comes from the selected loan product.',
+  })
   @Type(() => Number)
-  @IsInt()
-  @Min(1, { message: 'Minimum term is 1 month' })
-  @Max(12, { message: 'Maximum term is 12 months' })
-  termMonths!: number;
+  @IsInt({
+    message: 'Term value must be a whole number',
+  })
+  @Min(1, {
+    message: 'Loan term must be greater than zero',
+  })
+  termValue!: number;
 
-  @ApiProperty({ example: 'Business capital for my shop' })
+  @ApiProperty({
+    example: 'Business capital for my shop',
+    description:
+      'Purpose of the loan',
+  })
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({
+    message: 'Loan purpose is required',
+  })
   purpose!: string;
 
-  // @ApiPropertyOptional({ example: 'Additional context about the loan' })
-  // @IsString()
-  // @IsOptional()
-  // notes?: string;
+  @ApiPropertyOptional({
+    example:
+      'Funds will be used to purchase additional stock.',
+    description:
+      'Additional information about the loan application',
+  })
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }
+
