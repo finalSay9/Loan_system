@@ -1,5 +1,6 @@
 
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -10,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { KycStatus } from 'prisma/generated/prisma';
 
 @Injectable()
 export class UsersService {
@@ -457,4 +459,53 @@ export class UsersService {
       },
     };
   }
+
+
+
+
+  async getUsersByKycStatus(status: KycStatus) {
+  const users = await this.prisma.user.findMany({
+    where: { kycStatus: status, role: 'BORROWER', deletedAt: null },
+    select: { id: true, name: true, phone: true, email: true, address: true, occupation: true, avatarUrl: true, kycStatus: true, createdAt: true },
+    orderBy: { createdAt: 'asc' },
+  })
+  return { data: users }
+}
+
+async getAllBorrowersKYC() {
+  const users = await this.prisma.user.findMany({
+    where: { role: 'BORROWER', deletedAt: null },
+    select: { id: true, name: true, phone: true, email: true, address: true, occupation: true, avatarUrl: true, kycStatus: true, createdAt: true },
+    orderBy: { createdAt: 'desc' },
+  })
+  return { data: users }
+}
+
+async updateKycStatus(userId: string, status: KycStatus, actorId: string, reason?: string) {
+  const user = await this.prisma.user.findUnique({ where: { id: userId } })
+  if (!user) throw new NotFoundException('User not found')
+  if (user.kycStatus !== 'PENDING') throw new BadRequestException(`KYC is already ${user.kycStatus}`)
+
+  const updated = await this.prisma.user.update({
+    where: { id: userId },
+    data: { kycStatus: status },
+  })
+
+  await this.prisma.auditLog.create({
+    data: {
+      actorId,
+      action: status === 'VERIFIED' ? 'KYC_APPROVED' : 'KYC_REJECTED',
+      entityType: 'User',
+      entityId: userId,
+      beforeState: { kycStatus: 'PENDING' },
+      afterState: { kycStatus: status, ...(reason ? { reason } : {}) },
+    },
+  })
+
+  return { message: `KYC ${status === 'VERIFIED' ? 'approved' : 'rejected'}`, data: updated }
+}
+
+
+
+
 }

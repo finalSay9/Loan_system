@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   SetMetadata,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -101,4 +102,42 @@ export class UsersController {
   async getUserById(@Param('id') userId: string) {
     return await this.usersService.findUserById(userId);
   }
+
+@UseGuards(JwtAuthGuard, RolesGuard)
+@SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+@Post(':id/kyc/approve')
+async approveKYC(
+  @Param('id', ParseUUIDPipe) userId: string,
+  @GetUser('id') actorId: string,
+) {
+  return this.usersService.updateKycStatus(userId, 'VERIFIED', actorId)
+}
+
+@UseGuards(JwtAuthGuard, RolesGuard)
+@SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+@Get('kyc/pending')
+async getPendingKYC() {
+  return this.usersService.getUsersByKycStatus('PENDING')
+}
+
+
+@UseGuards(JwtAuthGuard, RolesGuard)
+@SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+@Get('kyc/all')
+async getAllKYC() {
+  return this.usersService.getAllBorrowersKYC()
+}
+
+@UseGuards(JwtAuthGuard, RolesGuard)
+@SetMetadata('roles', ['SUPER_ADMIN', 'LOAN_OFFICER'])
+@Post(':id/kyc/reject')
+async rejectKYC(
+  @Param('id', ParseUUIDPipe) userId: string,
+  @Body('reason') reason: string,
+  @GetUser('id') actorId: string,
+) {
+  return this.usersService.updateKycStatus(userId, 'REJECTED', actorId, reason)
+}
+
+
 }

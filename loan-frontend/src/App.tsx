@@ -28,6 +28,9 @@ import { Transactions } from '@/pages/transactions/Transactions'
 
 import { useAuthStore } from '@/store/auth.store'
 import { useSocket } from './hooks/useSocket'
+import { AdminKYC } from   '@/pages/admin/AdminKyc'
+
+
 
 
 const SocketProvider = ({
@@ -167,6 +170,14 @@ export default function App() {
                 </AdminRoute>
               }
             />
+            <Route
+             path="/admin/kyc"
+             element={
+              <AdminRoute>
+                <AdminKYC />
+                </AdminRoute>
+              } 
+              />
 
 
             {/* =====================================================
