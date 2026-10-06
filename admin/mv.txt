@@ -1,12 +1,1 @@
-curl -i -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "James Phiri",
-    "phone": "+260991088881",
-    "password": "Off1icer@123",
-    "role": "LOAN_OFFICER",
-    "address": "Area 3, Lilongwe",
-    "occupation": "Loan Officer"
-  }' \
-  http://localhost:8000/backoffice/api/staff/
+curl -X POST http://localhost:3200/api/v1/loan-products -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwaG9uZSI6IisyNjU4ODMzNDE1NDIiLCJzdWIiOiIwMDZhYzM0OS1lOGJkLTRiNTctYjliMy00OTNiOWRiZTIyYjgiLCJpYXQiOjE3OTEyNzEwNjMsImV4cCI6MTc5MTg3NTg2M30.kmeum1QYqCVgdbbGMjLIFNNQt5G05COYfUaWBRWNIP4" -H "Content-Type: application/json" -d '{"name":"Business Loan","description":"Financing for small businesses","minAmount":10000,"maxAmount":1000000,"interestRate":12.5,"interestType":"REDUCING_BALANCE","minTermValue":3,"maxTermValue":24,"termUnit":"MONTHS","repaymentFrequency":"MONTHLY","processingFeeType":"FIXED","processingFeeAmount":5000,"processingFeeRate":0,"lateFeeType":"FIXED","lateFeeAmount":1000,"lateFeeRate":0,"gracePeriodDays":3}'

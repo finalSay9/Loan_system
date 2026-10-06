@@ -1,61 +1,71 @@
 import React from 'react'
-import { Phone, Mail, MapPin, Briefcase, Calendar, Shield } from 'lucide-react'
-import { Badge } from '@/components/ui'
+import { Phone, Mail, MapPin, Briefcase, Calendar, Shield, ShieldCheck, ShieldAlert, Clock } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { getInitials, formatDate } from '@/utils'
+import './profile.css'
 
-const KYC_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  PENDING:  { label: 'Pending',  color: '#FAAD14', bg: '#FAAD1415', border: '#FAAD1440' },
-  VERIFIED: { label: 'Verified', color: '#00C9A7', bg: '#00C9A715', border: '#00C9A740' },
-  REJECTED: { label: 'Rejected', color: '#FF4D4F', bg: '#FF4D4F15', border: '#FF4D4F40' },
+const KYC_CFG: Record<string, { label: string; Icon: React.ElementType }> = {
+  PENDING:  { label: 'Verification pending', Icon: Shield },
+  VERIFIED: { label: 'Verified',             Icon: ShieldCheck },
+  REJECTED: { label: 'Verification failed',  Icon: ShieldAlert },
 }
 
 export const Profile: React.FC = () => {
   const { user } = useAuthStore()
   if (!user) return null
-  const kyc = KYC_CFG[user.kycStatus] ?? KYC_CFG['PENDING']
+
+  const kycKey = KYC_CFG[user.kycStatus] ? user.kycStatus : 'PENDING'
+  const { label, Icon: KycIcon } = KYC_CFG[kycKey]
+
+  const fields = [
+    { icon: Phone,     label: 'Phone',        value: user.phone },
+    { icon: Mail,      label: 'Email',        value: user.email ?? '—' },
+    { icon: MapPin,    label: 'Address',      value: user.address },
+    { icon: Briefcase, label: 'Occupation',   value: user.occupation },
+    { icon: Calendar,  label: 'Member since', value: formatDate(user.createdAt) },
+  ]
 
   return (
-    <div className="flex-col gap-6 fade-in" style={{ display: 'flex', maxWidth: 520 }}>
-      <h1 className="page-title">Profile</h1>
+    <div className="pf fade-in">
+      <h1>Profile</h1>
 
-      <div className="card flex items-center gap-4">
-        <div className="avatar-lg"><span>{getInitials(user.name)}</span></div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p className="font-bold text-text" style={{ fontSize: 17 }}>{user.name}</p>
-          <p className="text-sm text-silver mt-1">{user.role.replace(/_/g, ' ')}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <Shield size={12} style={{ color: 'var(--silver)' }} />
-            <span className="text-xs text-silver">KYC:</span>
-            <Badge status={user.kycStatus} label={kyc.label} color={kyc.color} bg={kyc.bg} border={kyc.border} />
+      <div className="pf-card">
+        <div className="pf-banner" />
+        <div className="pf-id">
+          <div className="pf-avatar">{getInitials(user.name)}</div>
+          <div className="pf-id-text">
+            <p className="pf-name">{user.name}</p>
+            <p className="pf-role">{user.role.replace(/_/g, ' ').toLowerCase()}</p>
           </div>
+          <span className={`pf-kyc ${kycKey}`}>
+            <KycIcon size={14} />
+            {label}
+          </span>
         </div>
       </div>
 
-      <div className="card">
-        <p className="section-label">Account Information</p>
-        {[
-          { icon: Phone,     label: 'Phone',        value: user.phone },
-          { icon: Mail,      label: 'Email',        value: user.email ?? '—' },
-          { icon: MapPin,    label: 'Address',      value: user.address },
-          { icon: Briefcase, label: 'Occupation',   value: user.occupation },
-          { icon: Calendar,  label: 'Member since', value: formatDate(user.createdAt) },
-        ].map(({ icon: Icon, label, value }) => (
-          <div key={label} className="profile-field">
-            <Icon size={15} style={{ color: 'var(--silver)', flexShrink: 0 }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p className="text-xs text-silver">{label}</p>
-              <p className="text-sm text-text mt-1 truncate">{value}</p>
+      <div className="pf-card">
+        <p className="pf-head">Account information</p>
+        {fields.map(({ icon: Icon, label, value }) => (
+          <div key={label} className="pf-row">
+            <div className="pf-ico" style={{ flex: '0 0 40px' }}><Icon size={17} /></div>
+            <div>
+              <small>{label}</small>
+              <span title={String(value)}>{value}</span>
             </div>
           </div>
         ))}
       </div>
 
       {user.kycStatus === 'PENDING' && (
-        <div className="alert alert-warning">
+        <div className="pf-note" role="status">
+          <div className="pf-ico" style={{ flex: '0 0 40px' }}><Clock size={17} /></div>
           <div>
-            <p className="text-sm font-semibold mb-1">Identity verification in progress</p>
-            <p className="text-xs text-silver">Our team is reviewing your details. You'll be notified by SMS once verified. Loan disbursements are held until complete.</p>
+            <b>Identity verification in progress</b>
+            <p>
+              Our team is reviewing your details. You'll get an SMS once you're verified.
+              Loan disbursements are held until this is complete.
+            </p>
           </div>
         </div>
       )}

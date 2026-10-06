@@ -1,751 +1,334 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  PlusCircle,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  ArrowRight,
-  Star,
-  X,
-  CreditCard,
-} from "lucide-react";
-import { StatCard, Badge, Skeleton, Button, Modal } from "@/components/ui";
-import { useAuthStore } from "@/store/auth.store";
-import { getMyLoans } from "@/api";
-import { formatCurrency, formatDate, loanStatusConfig } from "@/utils";
-import type { LoanStatus } from "@/types";
-import api from "@/api/client";
-import toast from "react-hot-toast";
+import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { PlusCircle, TrendingUp, Clock, CheckCircle, ArrowRight, Star, CreditCard, Check, Banknote } from 'lucide-react'
+import { Skeleton, Modal } from '@/components/ui'
+import { useAuthStore } from '@/store/auth.store'
+import { getMyLoans } from '@/api'
+import { formatCurrency, formatDate } from '@/utils'
+import api from '@/api/client'
+import toast from 'react-hot-toast'
+import './dashboard.css'
+
+const STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
+  PENDING:      { label: 'Pending',      bg: '#FDF1D6', color: '#92620A' },
+  UNDER_REVIEW: { label: 'Under review', bg: '#D5F3EF', color: '#0B6B63' },
+  APPROVED:     { label: 'Approved',     bg: '#E3F5DC', color: '#2F6B12' },
+  DISBURSED:    { label: 'Disbursed',    bg: '#DEEEFB', color: '#185FA5' },
+  CLOSED:       { label: 'Closed',       bg: '#EEF2F2', color: '#5B6B6A' },
+  DEFAULTED:    { label: 'Defaulted',    bg: '#FCE8E6', color: '#B42318' },
+  REJECTED:     { label: 'Rejected',     bg: '#FCE8E6', color: '#B42318' },
+  CANCELLED:    { label: 'Cancelled',    bg: '#EEF2F2', color: '#5B6B6A' },
+}
+
+// Small button used by this page (native <button>, so no dependency on the shared Button styles)
+const Btn: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'solid' | 'ghost'; small?: boolean; grow?: boolean; loading?: boolean
+}> = ({ variant = 'solid', small, grow, loading, children, disabled, ...rest }) => (
+  <button
+    {...rest}
+    disabled={disabled || loading}
+    className={`db-btn${variant === 'ghost' ? ' ghost' : ''}${small ? ' sm' : ''}${grow ? ' grow' : ''}`}
+  >
+    {loading ? <span className="db-spin" aria-label="Loading" /> : children}
+  </button>
+)
 
 // ── Feedback Modal ────────────────────────────────────────
-const FeedbackModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
-  isOpen,
-  onClose,
-}) => {
-  const [rating, setRating] = useState(0);
-  const [hovered, setHovered] = useState(0);
-  const [comment, setComment] = useState("");
-  const qc = useQueryClient();
+const FeedbackModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+  const [rating, setRating] = useState(0)
+  const [hovered, setHovered] = useState(0)
+  const [comment, setComment] = useState('')
+  const qc = useQueryClient()
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () =>
-      api.post("/feedback", { rating, comment: comment || undefined }),
+    mutationFn: () => api.post('/feedback', { rating, comment: comment || undefined }),
     onSuccess: () => {
-      toast.success("Thank you for your feedback!");
-      qc.invalidateQueries({ queryKey: ["satisfaction"] });
-      setRating(0);
-      setComment("");
-      onClose();
+      toast.success('Thank you for your feedback!')
+      qc.invalidateQueries({ queryKey: ['satisfaction'] })
+      setRating(0)
+      setComment('')
+      onClose()
     },
-    onError: () => toast.error("Failed to submit feedback"),
-  });
+    onError: () => toast.error('Failed to submit feedback'),
+  })
 
   const labels: Record<number, string> = {
-    1: "Poor — very unsatisfied",
-    2: "Neutral — could be better",
-    3: "Good — satisfied",
-    4: "Excellent — very satisfied",
-  };
+    1: 'Poor: very unsatisfied',
+    2: 'Neutral: could be better',
+    3: 'Good: satisfied',
+    4: 'Excellent: very satisfied',
+  }
+  const shown = hovered || rating
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Share your feedback">
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <p style={{ fontSize: 13, color: "var(--silver)", margin: 0 }}>
-          How would you rate your experience with LoanFlow? Your feedback helps
-          us improve.
-        </p>
+      <div className="db-modal">
+        <p className="intro">How would you rate your experience with LoanFlow? Your feedback helps us improve.</p>
 
-        {/* Star rating */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 10,
-          }}
-        >
-          <div style={{ display: "flex", gap: 8 }}>
-            {[1, 2, 3, 4].map((s) => (
+        <div className="db-stars">
+          <div className="s">
+            {[1, 2, 3, 4].map(s => (
               <button
-                key={s}
-                type="button"
+                key={s} type="button" aria-label={`${s} star${s > 1 ? 's' : ''}`}
+                className={`db-star${shown >= s ? ' on' : ''}`}
                 onClick={() => setRating(s)}
                 onMouseEnter={() => setHovered(s)}
                 onMouseLeave={() => setHovered(0)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 4,
-                  transition: "transform .1s",
-                  transform:
-                    (hovered || rating) >= s ? "scale(1.15)" : "scale(1)",
-                }}
               >
-                <Star
-                  size={32}
-                  fill={(hovered || rating) >= s ? "#FAAD14" : "none"}
-                  color={(hovered || rating) >= s ? "#FAAD14" : "var(--dim)"}
-                  strokeWidth={1.5}
-                />
+                <Star size={34} strokeWidth={1.6}
+                  fill={shown >= s ? '#F5B83D' : 'none'}
+                  color={shown >= s ? '#F5B83D' : '#B9CFCC'} />
               </button>
             ))}
           </div>
-          {(hovered || rating) > 0 && (
-            <p
-              style={{
-                fontSize: 13,
-                color: "#FAAD14",
-                fontWeight: 500,
-                margin: 0,
-              }}
-            >
-              {labels[hovered || rating]}
-            </p>
-          )}
+          <p>{shown > 0 ? labels[shown] : ''}</p>
         </div>
 
-        {/* Comment */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "var(--silver)",
-              textTransform: "uppercase",
-              letterSpacing: ".05em",
-            }}
-          >
-            Comment (optional)
-          </label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={3}
-            placeholder="Tell us more about your experience…"
-            style={{
-              width: "100%",
-              background: "var(--navy-lighter)",
-              border: "1.5px solid var(--navy-lighter)",
-              borderRadius: 8,
-              padding: "10px 12px",
-              color: "var(--text)",
-              fontSize: 13,
-              fontFamily: "inherit",
-              outline: "none",
-              resize: "none",
-              transition: "border-color .15s",
-            }}
-            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-            onBlur={(e) => (e.target.style.borderColor = "var(--navy-lighter)")}
-          />
+        <div className="db-field">
+          <label className="db-label" htmlFor="fb-comment">Comment (optional)</label>
+          <textarea id="fb-comment" className="db-textarea" rows={3} value={comment}
+            onChange={e => setComment(e.target.value)} placeholder="Tell us more about your experience…" />
         </div>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <Button variant="outline" onClick={onClose} style={{ flex: 1 }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() => mutate()}
-            loading={isPending}
-            disabled={rating === 0}
-            style={{ flex: 1 }}
-          >
-            Submit feedback
-          </Button>
+        <div className="db-row">
+          <Btn variant="ghost" grow onClick={onClose}>Cancel</Btn>
+          <Btn grow loading={isPending} disabled={rating === 0} onClick={() => mutate()}>Submit feedback</Btn>
         </div>
       </div>
     </Modal>
-  );
-};
+  )
+}
 
 // ── Payment Modal ─────────────────────────────────────────
-const PaymentModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  loans: any[];
-}> = ({ isOpen, onClose, loans }) => {
-  const qc = useQueryClient();
-  const [selectedLoan, setSelectedLoan] = useState("");
-  const [amount, setAmount] = useState("");
-  const [reference, setReference] = useState(`REF-${Date.now()}`);
+const PaymentModal: React.FC<{ isOpen: boolean; onClose: () => void; loans: any[] }> = ({ isOpen, onClose, loans }) => {
+  const qc = useQueryClient()
+  const [selectedLoan, setSelectedLoan] = useState('')
+  const [amount, setAmount] = useState('')
+  const [reference, setReference] = useState(`REF-${Date.now()}`)
 
-  const activeLoans = loans.filter((l) => l.status === "DISBURSED");
+  const activeLoans = loans.filter(l => l.status === 'DISBURSED')
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () =>
-      api.post("/payments/repay", {
-        loanId: selectedLoan,
-        amount: Number(amount),
-        reference,
-      }),
+    mutationFn: () => api.post('/payments/repay', { loanId: selectedLoan, amount: Number(amount), reference }),
     onSuccess: (response: any) => {
-      // Invalidate everything that shows loan or payment data
-      qc.invalidateQueries({ queryKey: ["my-loans"] });
-      qc.invalidateQueries({ queryKey: ["my-transactions"] });
-      qc.invalidateQueries({ queryKey: ["loan-balance", selectedLoan] });
-      qc.invalidateQueries({ queryKey: ["admin-loans"] });
+      qc.invalidateQueries({ queryKey: ['my-loans'] })
+      qc.invalidateQueries({ queryKey: ['my-transactions'] })
+      qc.invalidateQueries({ queryKey: ['loan-balance', selectedLoan] })
+      qc.invalidateQueries({ queryKey: ['admin-loans'] })
 
-      // Show balance in toast
-      const balance = response?.balance;
+      const balance = response?.balance
       if (balance) {
-        if (balance.outstanding === 0) {
-          toast.success("🎉 Loan fully repaid! Your account is clear.");
-        } else {
-          toast.success(
-            `Payment recorded. Outstanding: ${formatCurrency(balance.outstanding)}`,
-          );
-        }
+        if (balance.outstanding === 0) toast.success('Loan fully repaid! Your account is clear.')
+        else toast.success(`Payment recorded. Outstanding: ${formatCurrency(balance.outstanding)}`)
       } else {
-        toast.success("Payment recorded successfully!");
+        toast.success('Payment recorded successfully!')
       }
 
-      setSelectedLoan("");
-      setAmount("");
-      setReference(`REF-${Date.now()}`);
-      onClose();
+      setSelectedLoan('')
+      setAmount('')
+      setReference(`REF-${Date.now()}`)
+      onClose()
     },
-    onError: (err: any) =>
-      toast.error(err.response?.data?.message ?? "Payment failed"),
-  });
-  const selectedLoanData = loans.find((l) => l.id === selectedLoan);
+    onError: (err: any) => toast.error(err.response?.data?.message ?? 'Payment failed'),
+  })
+
+  const selected = loans.find(l => l.id === selectedLoan)
+  const outstanding: number | undefined = selected?.balance?.outstanding
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Make a repayment">
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <p style={{ fontSize: 13, color: "var(--silver)", margin: 0 }}>
-          Select an active loan and enter the amount you want to repay.
-        </p>
+      <div className="db-modal">
+        <p className="intro">Select an active loan and enter the amount you want to repay.</p>
 
         {activeLoans.length === 0 ? (
-          <div
-            style={{
-              padding: "20px",
-              textAlign: "center",
-              background: "var(--navy-lighter)",
-              borderRadius: 10,
-            }}
-          >
-            <CreditCard
-              size={28}
-              style={{ color: "var(--dim)", marginBottom: 8 }}
-            />
-            <p style={{ fontSize: 13, color: "var(--silver)", margin: 0 }}>
-              No active loans to repay
-            </p>
+          <div className="db-none">
+            <CreditCard size={26} />
+            <div>No active loans to repay</div>
           </div>
         ) : (
           <>
-            {/* Loan selector */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "var(--silver)",
-                  textTransform: "uppercase",
-                  letterSpacing: ".05em",
-                }}
-              >
-                Select loan
-              </label>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {activeLoans.map((loan) => (
-                  <button
-                    key={loan.id}
-                    type="button"
-                    onClick={() => setSelectedLoan(loan.id)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "10px 14px",
-                      borderRadius: 8,
-                      border: `1.5px solid ${selectedLoan === loan.id ? "var(--teal)" : "var(--navy-lighter)"}`,
-                      background:
-                        selectedLoan === loan.id
-                          ? "rgba(0,201,167,0.08)"
-                          : "var(--navy-lighter)",
-                      cursor: "pointer",
-                      transition: "all .15s",
-                      textAlign: "left",
-                      width: "100%",
-                    }}
-                  >
+            <div className="db-field">
+              <span className="db-label">Select loan</span>
+              <div className="db-opts">
+                {activeLoans.map(loan => (
+                  <button key={loan.id} type="button"
+                    className={`db-opt${selectedLoan === loan.id ? ' sel' : ''}`}
+                    aria-pressed={selectedLoan === loan.id}
+                    onClick={() => setSelectedLoan(loan.id)}>
                     <div>
-                      <div
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 600,
-                          color: "var(--text)",
-                        }}
-                      >
-                        {formatCurrency(Number(loan.amount))}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "var(--silver)",
-                          marginTop: 2,
-                        }}
-                      >
-                        {loan.purpose}
-                      </div>
+                      <b>{formatCurrency(Number(loan.amount))}</b>
+                      <small>{loan.purpose}</small>
                     </div>
-                    {selectedLoan === loan.id && (
-                      <div
-                        style={{
-                          width: 18,
-                          height: 18,
-                          borderRadius: "50%",
-                          background: "var(--teal)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "#0a1420",
-                            fontSize: 11,
-                            fontWeight: 900,
-                          }}
-                        >
-                          ✓
-                        </span>
-                      </div>
-                    )}
+                    {selectedLoan === loan.id && <span className="db-tick"><Check size={13} strokeWidth={3} /></span>}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Amount */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "var(--silver)",
-                  textTransform: "uppercase",
-                  letterSpacing: ".05em",
-                }}
-              >
-                Amount (MWK)
-              </label>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Enter amount to repay"
-                style={{
-                  width: "100%",
-                  background: "var(--navy-lighter)",
-                  border: "1.5px solid var(--navy-lighter)",
-                  borderRadius: 8,
-                  padding: "11px 14px",
-                  color: "var(--text)",
-                  fontSize: 14,
-                  fontFamily: "inherit",
-                  outline: "none",
-                  transition: "border-color .15s",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                onBlur={(e) =>
-                  (e.target.style.borderColor = "var(--navy-lighter)")
-                }
-              />
-              {selectedLoanData && (
-                <p style={{ fontSize: 11, color: "var(--silver)", margin: 0 }}>
-                  Loan amount: {formatCurrency(Number(selectedLoanData.amount))}
+            <div className="db-field">
+              <label className="db-label" htmlFor="pay-amount">Amount (MWK)</label>
+              <input id="pay-amount" className="db-input" type="number" inputMode="numeric" value={amount}
+                onChange={e => setAmount(e.target.value)} placeholder="Enter amount to repay" />
+              {selected && (
+                <p className="db-hint">
+                  Loan amount: {formatCurrency(Number(selected.amount))}
+                  {outstanding !== undefined && <> · Outstanding: {formatCurrency(outstanding)}</>}
                 </p>
               )}
             </div>
 
-            {/* Reference */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "var(--silver)",
-                  textTransform: "uppercase",
-                  letterSpacing: ".05em",
-                }}
-              >
-                Payment reference
-              </label>
-              <input
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                style={{
-                  width: "100%",
-                  background: "var(--navy-lighter)",
-                  border: "1.5px solid var(--navy-lighter)",
-                  borderRadius: 8,
-                  padding: "11px 14px",
-                  color: "var(--text)",
-                  fontSize: 13,
-                  fontFamily: "inherit",
-                  outline: "none",
-                }}
-              />
+            <div className="db-field">
+              <label className="db-label" htmlFor="pay-ref">Payment reference</label>
+              <input id="pay-ref" className="db-input" value={reference} onChange={e => setReference(e.target.value)} />
             </div>
 
-            <div style={{ display: "flex", gap: 10 }}>
-              <Button variant="outline" onClick={onClose} style={{ flex: 1 }}>
-                Cancel
-              </Button>
-              <Button
-                onClick={() => mutate()}
-                loading={isPending}
-                disabled={!selectedLoan || !amount || Number(amount) <= 0}
-                style={{ flex: 1 }}
-              >
-                <CreditCard size={14} /> Pay now
-              </Button>
+            <div className="db-row">
+              <Btn variant="ghost" grow onClick={onClose}>Cancel</Btn>
+              <Btn grow loading={isPending} disabled={!selectedLoan || !amount || Number(amount) <= 0} onClick={() => mutate()}>
+                <CreditCard size={15} /> Pay now
+              </Btn>
             </div>
           </>
         )}
       </div>
     </Modal>
-  );
-};
+  )
+}
 
 // ── Dashboard ─────────────────────────────────────────────
 export const Dashboard: React.FC = () => {
-  const { user } = useAuthStore();
-  const { data, isLoading } = useQuery({
-    queryKey: ["my-loans"],
-    queryFn: () => getMyLoans(),
-  });
-  const loans = data?.data ?? [];
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [paymentOpen, setPaymentOpen] = useState(false);
+  const { user } = useAuthStore()
+  const { data, isLoading } = useQuery({ queryKey: ['my-loans'], queryFn: () => getMyLoans() })
+  const loans = data?.data ?? []
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [paymentOpen, setPaymentOpen] = useState(false)
 
-  // Total ever borrowed (for reference)
-  const totalBorrowed = loans
-    .filter((l) => ["DISBURSED", "CLOSED"].includes(l.status))
-    .reduce((s, l) => s + Number(l.amount), 0);
-
-  // Active = DISBURSED and still has outstanding balance
-  const activeLoans = loans.filter(
-    (l) => l.status === "DISBURSED" && (l as any).balance?.outstanding > 0,
-  ).length;
-
-  // Outstanding = sum of what's still owed, not total borrowed
+  // Active = DISBURSED and still has an outstanding balance
+  const activeLoans = loans.filter(l => l.status === 'DISBURSED' && (l as any).balance?.outstanding > 0).length
+  // Outstanding = what is still owed on disbursed loans
   const totalOutstanding = loans
-    .filter((l) => l.status === "DISBURSED")
-    .reduce((s, l) => s + ((l as any).balance?.outstanding ?? 0), 0);
+    .filter(l => l.status === 'DISBURSED')
+    .reduce((s, l) => s + ((l as any).balance?.outstanding ?? 0), 0)
+  // Repaid across all loans
+  const totalRepaid = loans.reduce((s, l) => s + ((l as any).balance?.totalPaid ?? 0), 0)
 
-  // Total repaid across all loans
-  const totalRepaid = loans.reduce(
-    (s, l) => s + ((l as any).balance?.totalPaid ?? 0),
-    0,
-  );
-
-  const pendingLoans = loans.filter((l) =>
-    ["PENDING", "UNDER_REVIEW"].includes(l.status),
-  ).length;
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
   return (
-    <div className="flex-col gap-6 fade-in" style={{ display: "flex" }}>
+    <div className="db fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="db-head">
         <div>
-          <p className="text-sm text-silver">{greeting}</p>
-          <h1
-            className="font-black"
-            style={{ fontSize: 26, color: "var(--text)", marginTop: 2 }}
-          >
-            {user?.name?.split(" ")[0]} 👋
-          </h1>
+          <small>{greeting}</small>
+          <h1>{user?.name?.split(' ')[0]}</h1>
         </div>
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setFeedbackOpen(true)}
-          >
-            <Star size={13} /> Feedback
-          </Button>
-          <Link to="/loans/apply">
-            <Button size="sm">
-              <PlusCircle size={13} /> Apply
-            </Button>
-          </Link>
+        <div className="db-actions">
+          <Btn small variant="ghost" onClick={() => setFeedbackOpen(true)}><Star size={14} /> Feedback</Btn>
+          <Link to="/loans/apply" className="db-btn sm"><PlusCircle size={14} /> Apply</Link>
         </div>
       </div>
 
       {/* KYC warning */}
-      {user?.kycStatus === "PENDING" && (
-        <div className="alert alert-warning">
-          <Clock size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+      {user?.kycStatus === 'PENDING' && (
+        <div className="db-banner warn" role="status">
+          <div className="ico"><Clock size={18} /></div>
           <div>
-            <p className="text-sm font-semibold">KYC verification pending</p>
-            <p className="text-xs text-silver mt-1">
-              Your identity is being verified. Disbursements are on hold until
-              complete.
-            </p>
+            <b>KYC verification pending</b>
+            <p>Your identity is being verified. Disbursements are on hold until it is complete.</p>
           </div>
         </div>
       )}
 
-      {/* Active loan repayment prompt */}
+      {/* Repayment prompt */}
       {activeLoans > 0 && (
-        <div
-          style={{
-            background: "rgba(0,201,167,0.08)",
-            border: "1px solid rgba(0,201,167,0.25)",
-            borderRadius: 12,
-            padding: "14px 16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <CreditCard
-              size={18}
-              style={{ color: "var(--teal)", flexShrink: 0 }}
-            />
+        <div className="db-banner pay">
+          <div className="l">
+            <div className="ico"><CreditCard size={18} /></div>
             <div>
-              <p
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "var(--text)",
-                  margin: 0,
-                }}
-              >
-                You have {activeLoans} active loan{activeLoans > 1 ? "s" : ""}
-              </p>
-              <p
-                style={{
-                  fontSize: 11,
-                  color: "var(--silver)",
-                  margin: 0,
-                  marginTop: 2,
-                }}
-              >
-                Make a repayment to keep your account in good standing
-              </p>
+              <b>You have {activeLoans} active loan{activeLoans > 1 ? 's' : ''}</b>
+              <p>Make a repayment to keep your account in good standing</p>
             </div>
           </div>
-          <Button size="sm" onClick={() => setPaymentOpen(true)}>
-            <CreditCard size={13} /> Make payment
-          </Button>
+          <Btn small onClick={() => setPaymentOpen(true)}><CreditCard size={14} /> Make payment</Btn>
         </div>
       )}
 
       {/* Stats */}
-      <div className="stats-grid">
-        <StatCard
-          label="Outstanding Balance"
-          value={
-            totalOutstanding > 0 ? formatCurrency(totalOutstanding) : "MWK 0"
-          }
-          sub="What you still owe"
-          accent={totalOutstanding > 0 ? "var(--danger)" : "var(--teal)"}
-          icon={<TrendingUp size={16} />}
-        />
-        <StatCard
-          label="Total Repaid"
-          value={formatCurrency(totalRepaid)}
-          sub="Across all loans"
-          accent="#16A34A"
-          icon={<CheckCircle size={16} />}
-        />
-        <StatCard
-          label="Active Loans"
-          value={String(activeLoans)}
-          sub="With outstanding balance"
-          accent="var(--blue)"
-          icon={<Clock size={16} />}
-        />
+      <div className="db-stats">
+        <div className="db-card db-stat hero">
+          <div className="db-stat-top"><span>Outstanding balance</span><div className="db-chip"><TrendingUp size={18} /></div></div>
+          <strong>{totalOutstanding > 0 ? formatCurrency(totalOutstanding) : 'MWK 0'}</strong>
+          <em>What you still owe</em>
+        </div>
+        <div className="db-card db-stat">
+          <div className="db-stat-top"><span>Total repaid</span><div className="db-chip"><CheckCircle size={18} /></div></div>
+          <strong>{formatCurrency(totalRepaid)}</strong>
+          <em>Across all loans</em>
+        </div>
+        <div className="db-card db-stat">
+          <div className="db-stat-top"><span>Active loans</span><div className="db-chip"><Clock size={18} /></div></div>
+          <strong>{activeLoans}</strong>
+          <em>With outstanding balance</em>
+        </div>
       </div>
 
       {/* Recent loans */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <span className="font-semibold" style={{ color: "var(--text)" }}>
-            Recent Loans
-          </span>
-          <Link
-            to="/loans"
-            style={{
-              color: "var(--teal)",
-              textDecoration: "none",
-              fontSize: 13,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            View all <ArrowRight size={12} />
-          </Link>
+      <section>
+        <div className="db-sec-head">
+          <h2>Recent loans</h2>
+          <Link to="/loans" className="db-more">View all <ArrowRight size={13} /></Link>
         </div>
 
         {isLoading ? (
-          <div className="flex-col gap-3" style={{ display: "flex" }}>
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} style={{ height: 76, borderRadius: 10 }} />
-            ))}
+          <div className="db-list">
+            {[1, 2, 3].map(i => <Skeleton key={i} style={{ height: 78, borderRadius: 18 }} />)}
           </div>
         ) : loans.length === 0 ? (
-          <div
-            className="card"
-            style={{ textAlign: "center", padding: "40px 20px" }}
-          >
-            <p className="text-silver text-sm">No loans yet</p>
-            <p className="text-xs text-dim mt-1 mb-4">
-              Apply for your first loan to get started
-            </p>
-            <Link to="/loans/apply">
-              <Button size="sm">
-                <PlusCircle size={14} /> Apply now
-              </Button>
-            </Link>
+          <div className="db-card db-empty">
+            <div className="ico"><Banknote size={24} /></div>
+            <b>No loans yet</b>
+            <p>Apply for your first loan to get started</p>
+            <Link to="/loans/apply" className="db-btn sm"><PlusCircle size={14} /> Apply now</Link>
           </div>
         ) : (
-          <div className="flex-col gap-3" style={{ display: "flex" }}>
-            {loans.slice(0, 5).map((loan) => {
-              const cfg = loanStatusConfig[loan.status as LoanStatus];
+          <div className="db-list">
+            {loans.slice(0, 5).map(loan => {
+              const pill = STATUS_PILL[loan.status] ?? STATUS_PILL.CLOSED
               return (
-                <Link
-                  key={loan.id}
-                  to={`/loans/${loan.id}`}
-                  className="loan-card loan-card-left"
-                  style={{ borderLeftColor: cfg.color }}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p
-                        className="font-bold text-text"
-                        style={{ fontSize: 15 }}
-                      >
-                        {formatCurrency(Number(loan.amount))}
-                      </p>
-                      <p className="text-sm text-silver truncate mt-1">
-                        {loan.purpose}
-                      </p>
-                      <p className="text-xs text-dim mt-1">
-                        {formatDate(loan.createdAt)}
-                      </p>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        gap: 6,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Badge
-                        status={loan.status}
-                        label={cfg.label}
-                        color={cfg.color}
-                        bg={cfg.bg}
-                        border={cfg.border}
-                      />
-                      <span className="text-xs text-dim">
-                        {loan.termMonths}mo
-                      </span>
-                    </div>
+                <Link key={loan.id} to={`/loans/${loan.id}`} className="db-card db-loan">
+                  <div className="ico"><Banknote size={20} /></div>
+                  <div className="mid">
+                    <p className="amt">{formatCurrency(Number(loan.amount))}</p>
+                    <p className="pur">{loan.purpose}</p>
+                    <p className="dt">{formatDate(loan.createdAt)}</p>
+                  </div>
+                  <div className="end">
+                    <span className="db-pill" style={{ background: pill.bg, color: pill.color }}>{pill.label}</span>
+                    <span className="term">{loan.termValue}</span>
                   </div>
                 </Link>
-              );
+              )
             })}
           </div>
         )}
-      </div>
+      </section>
 
       {/* Transactions link */}
-      <Link to="/transactions" style={{ textDecoration: "none" }}>
-        <div
-          style={{
-            background: "var(--navy-light)",
-            border: "1px solid var(--navy-lighter)",
-            borderRadius: 12,
-            padding: "14px 16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            cursor: "pointer",
-            transition: "border-color .15s",
-          }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLElement).style.borderColor =
-              "rgba(0,201,167,0.3)")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLElement).style.borderColor =
-              "var(--navy-lighter)")
-          }
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 9,
-                background: "rgba(0,201,167,0.1)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <CreditCard size={16} style={{ color: "var(--teal)" }} />
-            </div>
-            <div>
-              <p
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "var(--text)",
-                  margin: 0,
-                }}
-              >
-                Transaction history
-              </p>
-              <p
-                style={{
-                  fontSize: 11,
-                  color: "var(--silver)",
-                  margin: 0,
-                  marginTop: 1,
-                }}
-              >
-                View all your payments and repayments
-              </p>
-            </div>
+      <Link to="/transactions" className="db-card db-tx">
+        <div className="l">
+          <div className="ico"><CreditCard size={18} /></div>
+          <div>
+            <b>Transaction history</b>
+            <small>View all your payments and repayments</small>
           </div>
-          <ArrowRight
-            size={15}
-            style={{ color: "var(--dim)", flexShrink: 0 }}
-          />
         </div>
+        <ArrowRight size={16} className="arr" />
       </Link>
 
-      {/* Modals */}
-      <FeedbackModal
-        isOpen={feedbackOpen}
-        onClose={() => setFeedbackOpen(false)}
-      />
-      <PaymentModal
-        isOpen={paymentOpen}
-        onClose={() => setPaymentOpen(false)}
-        loans={loans}
-      />
+      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <PaymentModal isOpen={paymentOpen} onClose={() => setPaymentOpen(false)} loans={loans} />
     </div>
-  );
-};
+  )
+}
