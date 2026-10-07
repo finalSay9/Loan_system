@@ -17,13 +17,24 @@ export class PaymentsService {
   ) {}
 
   /**
-   * Make a loan repayment.
+   * Record a repayment against a disbursed loan.
    *
-   * The payment, repayment schedule updates,
-   * audit logs, and loan closure happen atomically.
+   * Payment processing is atomic:
    *
-   * The WebSocket event is emitted only after
-   * the transaction successfully commits.
+   * 1. Validate the loan.
+   * 2. Validate idempotency/reference.
+   * 3. Calculate the outstanding balance.
+   * 4. Create the repayment transaction.
+   * 5. Allocate the payment FIFO across installments.
+   * 6. Allocate each installment payment in priority order:
+   *      penalty -> fee -> interest -> principal
+   * 7. Create PaymentAllocation records.
+   * 8. Update repayment schedules.
+   * 9. Close the loan when all installments are paid.
+   * 10. Write audit logs.
+   *
+   * The WebSocket event is emitted only after the
+   * database transaction successfully commits.
    */
   async makeRepayment(
     userId: string,
@@ -33,28 +44,16 @@ export class PaymentsService {
       reference: string;
     },
   ) {
-    // Validate payment amount
-    if (!Number.isFinite(dto.amount) || dto.amount <= 0) {
-      throw new BadRequestException(
-        'Payment amount must be greater than zero',
-      );
-    }
-
-    // Validate payment reference
-    if (!dto.reference?.trim()) {
-      throw new BadRequestException(
-        'Payment reference is required',
-      );
-    }
+    this.validatePayment(dto);
 
     const reference = dto.reference.trim();
 
-    /*
-     * Everything that changes financial state belongs
-     * inside one database transaction.
-     */
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Find the user's active loan
+      /**
+       * ---------------------------------------------------------
+       * 1. Validate the loan
+       * ---------------------------------------------------------
+       */
       const loan = await tx.loan.findFirst({
         where: {
           id: dto.loanId,
@@ -69,36 +68,64 @@ export class PaymentsService {
         );
       }
 
-      // 2. Check whether this payment reference
-      // has already been processed.
-      const existingTx = await tx.transaction.findUnique({
-        where: {
-          reference,
-        },
-      });
+      /**
+       * ---------------------------------------------------------
+       * 2. Idempotency / duplicate reference protection
+       * ---------------------------------------------------------
+       *
+       * The database also has a UNIQUE constraint on reference.
+       * This application-level check gives the user a meaningful
+       * ConflictException before Prisma reaches the constraint.
+       */
+      const existingTransaction =
+        await tx.transaction.findUnique({
+          where: {
+            reference,
+          },
+        });
 
-      if (existingTx) {
+      if (existingTransaction) {
         throw new ConflictException(
           'A payment with this reference already exists',
         );
       }
 
-      // 3. Get pending repayment schedules
-      // oldest installment first.
-      const schedules = await tx.repaymentSchedule.findMany({
-        where: {
-          loanId: dto.loanId,
-          status: 'PENDING',
-        },
-        orderBy: [
-          {
-            dueDate: 'asc',
+      /**
+       * ---------------------------------------------------------
+       * 3. Get outstanding repayment schedules
+       * ---------------------------------------------------------
+       *
+       * IMPORTANT:
+       *
+       * PARTIALLY_PAID and OVERDUE installments must remain
+       * eligible for payment.
+       *
+       * PAID and WAIVED installments are excluded.
+       */
+      const schedules =
+        await tx.repaymentSchedule.findMany({
+          where: {
+            loanId: dto.loanId,
+            status: {
+              in: [
+                'PENDING',
+                'PARTIALLY_PAID',
+                'OVERDUE',
+              ],
+            },
           },
-          {
-            id: 'asc',
-          },
-        ],
-      });
+          orderBy: [
+            {
+              dueDate: 'asc',
+            },
+            {
+              installmentNumber: 'asc',
+            },
+            {
+              id: 'asc',
+            },
+          ],
+        });
 
       if (schedules.length === 0) {
         throw new BadRequestException(
@@ -106,31 +133,21 @@ export class PaymentsService {
         );
       }
 
-      // 4. Get all schedules so we can calculate
-      // the current outstanding balance.
-      const allSchedules =
-        await tx.repaymentSchedule.findMany({
-          where: {
-            loanId: dto.loanId,
-          },
-        });
-
-      const totalDue = allSchedules.reduce(
-        (sum, schedule) =>
-          sum + Number(schedule.amountDue),
-        0,
-      );
-
-      const totalPaidBefore = allSchedules.reduce(
-        (sum, schedule) =>
-          sum + Number(schedule.amountPaid),
-        0,
-      );
-
+      /**
+       * ---------------------------------------------------------
+       * 4. Calculate outstanding loan balance
+       * ---------------------------------------------------------
+       */
       const outstandingBefore =
-        totalDue - totalPaidBefore;
+        schedules.reduce(
+          (sum, schedule) =>
+            sum +
+            this.calculateScheduleOutstanding(
+              schedule,
+            ),
+          0,
+        );
 
-      // Prevent overpayment.
       if (
         dto.amount >
         outstandingBefore + 0.000001
@@ -140,29 +157,27 @@ export class PaymentsService {
         );
       }
 
-      // 5. Record the payment transaction
-      const transaction = await tx.transaction.create({
-        data: {
-          loanId: dto.loanId,
-          type: 'REPAYMENT',
-          amount: dto.amount,
-          reference,
-          providerRef: `MAN-${Date.now()}`,
-        },
-      });
+      /**
+       * ---------------------------------------------------------
+       * 5. Create the repayment transaction
+       * ---------------------------------------------------------
+       */
+      const transaction =
+        await tx.transaction.create({
+          data: {
+            loanId: dto.loanId,
+            type: 'REPAYMENT',
+            amount: dto.amount,
+            reference,
+            providerRef: `MAN-${Date.now()}`,
+          },
+        });
 
-      // 6. Allocate payment across installments.
-      //
-      // Example:
-      //
-      // Installment 1 = 500
-      // Installment 2 = 500
-      //
-      // User pays 700
-      //
-      // Installment 1 = PAID (500)
-      // Installment 2 = 200
-      //
+      /**
+       * ---------------------------------------------------------
+       * 6. Allocate payment across installments
+       * ---------------------------------------------------------
+       */
       let remainingPayment = dto.amount;
 
       for (const schedule of schedules) {
@@ -170,54 +185,133 @@ export class PaymentsService {
           break;
         }
 
-        const amountDue = Number(
-          schedule.amountDue,
-        );
+        const allocation =
+          this.calculatePaymentAllocation(
+            schedule,
+            remainingPayment,
+          );
 
-        const alreadyPaid = Number(
-          schedule.amountPaid,
-        );
-
-        const installmentOutstanding = Math.max(
-          0,
-          amountDue - alreadyPaid,
-        );
-
-        if (installmentOutstanding <= 0) {
+        if (allocation.total <= 0.000001) {
           continue;
         }
 
-        const amountAllocated = Math.min(
-          remainingPayment,
-          installmentOutstanding,
-        );
+        /**
+         * -------------------------------------------------------
+         * Create immutable payment allocation record
+         * -------------------------------------------------------
+         */
+        await tx.paymentAllocation.create({
+          data: {
+            transactionId: transaction.id,
+            scheduleId: schedule.id,
+
+            principalAmount:
+              allocation.principal,
+
+            interestAmount:
+              allocation.interest,
+
+            feeAmount:
+              allocation.fee,
+
+            penaltyAmount:
+              allocation.penalty,
+          },
+        });
+
+        /**
+         * -------------------------------------------------------
+         * Update repayment schedule
+         * -------------------------------------------------------
+         */
+        const newPrincipalPaid =
+          Number(schedule.principalPaid) +
+          allocation.principal;
+
+        const newInterestPaid =
+          Number(schedule.interestPaid) +
+          allocation.interest;
+
+        const newFeePaid =
+          Number(schedule.feePaid) +
+          allocation.fee;
+
+        const newPenaltyPaid =
+          Number(schedule.penaltyPaid) +
+          allocation.penalty;
 
         const newAmountPaid =
-          alreadyPaid + amountAllocated;
+          Number(schedule.amountPaid) +
+          allocation.total;
 
         const fullyPaid =
           newAmountPaid >=
-          amountDue - 0.000001;
+          Number(schedule.amountDue) -
+            0.000001;
 
         await tx.repaymentSchedule.update({
           where: {
             id: schedule.id,
           },
+
           data: {
             amountPaid: fullyPaid
               ? schedule.amountDue
               : newAmountPaid,
 
+            principalPaid:
+              fullyPaid
+                ? schedule.principalAmount
+                : newPrincipalPaid,
+
+            interestPaid:
+              fullyPaid
+                ? schedule.interestAmount
+                : newInterestPaid,
+
+            feePaid:
+              fullyPaid
+                ? schedule.feeAmount
+                : newFeePaid,
+
+            penaltyPaid:
+              fullyPaid
+                ? schedule.penaltyAmount
+                : newPenaltyPaid,
+
             status: fullyPaid
               ? 'PAID'
-              : 'PENDING',
+              : schedule.status ===
+                  'OVERDUE'
+                ? 'OVERDUE'
+                : 'PARTIALLY_PAID',
+
+            paidAt: fullyPaid
+              ? new Date()
+              : null,
           },
         });
 
-        remainingPayment -= amountAllocated;
+        remainingPayment -= allocation.total;
       }
 
-      // 7. Create repayment audit log
+      /**
+       * Floating-point protection.
+       *
+       * We should never silently lose money because of a
+       * floating-point calculation.
+       */
+      if (remainingPayment > 0.000001) {
+        throw new BadRequestException(
+          'Unable to allocate the entire payment',
+        );
+      }
+
+      /**
+       * ---------------------------------------------------------
+       * 7. Audit payment
+       * ---------------------------------------------------------
+       */
       await tx.auditLog.create({
         data: {
           actorId: userId,
@@ -233,7 +327,11 @@ export class PaymentsService {
         },
       });
 
-      // 8. Get updated repayment schedules
+      /**
+       * ---------------------------------------------------------
+       * 8. Recalculate loan balance
+       * ---------------------------------------------------------
+       */
       const updatedSchedules =
         await tx.repaymentSchedule.findMany({
           where: {
@@ -244,15 +342,14 @@ export class PaymentsService {
           },
         });
 
-      // 9. Calculate updated balance
-      const updatedTotalDue =
+      const totalDue =
         updatedSchedules.reduce(
           (sum, schedule) =>
             sum + Number(schedule.amountDue),
           0,
         );
 
-      const updatedTotalPaid =
+      const totalPaid =
         updatedSchedules.reduce(
           (sum, schedule) =>
             sum + Number(schedule.amountPaid),
@@ -261,23 +358,31 @@ export class PaymentsService {
 
       const outstanding = Math.max(
         0,
-        updatedTotalDue - updatedTotalPaid,
+        totalDue - totalPaid,
       );
 
-      // 10. Count remaining unpaid installments
       const remainingInstallments =
         updatedSchedules.filter(
           (schedule) =>
-            schedule.status !== 'PAID',
+            schedule.status !== 'PAID' &&
+            schedule.status !== 'WAIVED',
         ).length;
 
-      // 11. Determine whether the loan is fully paid
+      /**
+       * ---------------------------------------------------------
+       * 9. Determine whether the loan is fully repaid
+       * ---------------------------------------------------------
+       */
       const loanClosed =
         updatedSchedules.length > 0 &&
         remainingInstallments === 0 &&
         outstanding <= 0.000001;
 
-      // 12. Close the loan if everything has been paid
+      /**
+       * ---------------------------------------------------------
+       * 10. Close the loan
+       * ---------------------------------------------------------
+       */
       if (loanClosed) {
         await tx.loan.update({
           where: {
@@ -286,13 +391,13 @@ export class PaymentsService {
 
           data: {
             status: 'CLOSED',
+            closedAt: new Date(),
             version: {
               increment: 1,
             },
           },
         });
 
-        // Audit loan closure
         await tx.auditLog.create({
           data: {
             actorId: userId,
@@ -301,14 +406,22 @@ export class PaymentsService {
             entityId: dto.loanId,
 
             afterState: {
-              reason: 'All installments paid',
+              reason:
+                'All repayment installments paid',
+              finalPaymentReference:
+                reference,
+              finalPaymentTransactionId:
+                transaction.id,
             },
           },
         });
       }
 
-      // 13. Return everything we need AFTER
-      // the transaction commits.
+      /**
+       * ---------------------------------------------------------
+       * 11. Return post-transaction information
+       * ---------------------------------------------------------
+       */
       return {
         message: loanClosed
           ? 'Payment recorded — loan fully repaid!'
@@ -319,18 +432,19 @@ export class PaymentsService {
         loanClosed,
 
         balance: {
-          totalDue: updatedTotalDue,
-
-          totalPaid: updatedTotalPaid,
-
+          totalDue,
+          totalPaid,
           outstanding,
 
           progressPercent:
-            updatedTotalDue > 0
-              ? Math.round(
-                  (updatedTotalPaid /
-                    updatedTotalDue) *
-                    100,
+            totalDue > 0
+              ? Math.min(
+                  100,
+                  Math.round(
+                    (totalPaid /
+                      totalDue) *
+                      100,
+                  ),
                 )
               : 0,
 
@@ -339,14 +453,10 @@ export class PaymentsService {
       };
     });
 
-    /*
-     * IMPORTANT:
-     *
-     * This happens AFTER the database transaction
-     * successfully commits.
-     *
-     * If the transaction failed/rolled back,
-     * this event will never be emitted.
+    /**
+     * -----------------------------------------------------------
+     * Emit realtime update ONLY after successful commit.
+     * -----------------------------------------------------------
      */
     this.events.emitPaymentUpdate(
       userId,
@@ -355,6 +465,169 @@ export class PaymentsService {
     );
 
     return result;
+  }
+
+  /**
+   * Validate payment input before opening
+   * a database transaction.
+   */
+  private validatePayment(dto: {
+    loanId: string;
+    amount: number;
+    reference: string;
+  }) {
+    if (!dto.loanId?.trim()) {
+      throw new BadRequestException(
+        'Loan ID is required',
+      );
+    }
+
+    if (
+      !Number.isFinite(dto.amount) ||
+      dto.amount <= 0
+    ) {
+      throw new BadRequestException(
+        'Payment amount must be greater than zero',
+      );
+    }
+
+    if (!dto.reference?.trim()) {
+      throw new BadRequestException(
+        'Payment reference is required',
+      );
+    }
+  }
+
+  /**
+   * Calculate the amount still outstanding
+   * on an individual installment.
+   */
+  private calculateScheduleOutstanding(
+    schedule: {
+      amountDue: unknown;
+      amountPaid: unknown;
+    },
+  ): number {
+    return Math.max(
+      0,
+      Number(schedule.amountDue) -
+        Number(schedule.amountPaid),
+    );
+  }
+
+  /**
+   * Determine how a payment should be allocated
+   * against an installment.
+   *
+   * Priority:
+   *
+   * 1. Penalty
+   * 2. Fee
+   * 3. Interest
+   * 4. Principal
+   *
+   * This is deterministic and prevents a payment from
+   * being arbitrarily applied to principal first.
+   */
+  private calculatePaymentAllocation(
+    schedule: {
+      principalAmount: unknown;
+      interestAmount: unknown;
+      feeAmount: unknown;
+      penaltyAmount: unknown;
+
+      principalPaid: unknown;
+      interestPaid: unknown;
+      feePaid: unknown;
+      penaltyPaid: unknown;
+
+      amountDue: unknown;
+      amountPaid: unknown;
+    },
+    paymentAmount: number,
+  ) {
+    let remaining = paymentAmount;
+
+    /**
+     * Outstanding component balances.
+     */
+    const outstandingPenalty = Math.max(
+      0,
+      Number(schedule.penaltyAmount) -
+        Number(schedule.penaltyPaid),
+    );
+
+    const outstandingFee = Math.max(
+      0,
+      Number(schedule.feeAmount) -
+        Number(schedule.feePaid),
+    );
+
+    const outstandingInterest = Math.max(
+      0,
+      Number(schedule.interestAmount) -
+        Number(schedule.interestPaid),
+    );
+
+    const outstandingPrincipal = Math.max(
+      0,
+      Number(schedule.principalAmount) -
+        Number(schedule.principalPaid),
+    );
+
+    /**
+     * Penalty first.
+     */
+    const penalty = Math.min(
+      remaining,
+      outstandingPenalty,
+    );
+
+    remaining -= penalty;
+
+    /**
+     * Fee second.
+     */
+    const fee = Math.min(
+      remaining,
+      outstandingFee,
+    );
+
+    remaining -= fee;
+
+    /**
+     * Interest third.
+     */
+    const interest = Math.min(
+      remaining,
+      outstandingInterest,
+    );
+
+    remaining -= interest;
+
+    /**
+     * Principal last.
+     */
+    const principal = Math.min(
+      remaining,
+      outstandingPrincipal,
+    );
+
+    remaining -= principal;
+
+    const total =
+      penalty +
+      fee +
+      interest +
+      principal;
+
+    return {
+      penalty,
+      fee,
+      interest,
+      principal,
+      total,
+    };
   }
 
   /**
@@ -372,8 +645,20 @@ export class PaymentsService {
       include: {
         loan: {
           select: {
+            id: true,
             purpose: true,
             amount: true,
+          },
+        },
+
+        allocations: {
+          include: {
+            schedule: {
+              select: {
+                installmentNumber: true,
+                dueDate: true,
+              },
+            },
           },
         },
       },
@@ -385,15 +670,13 @@ export class PaymentsService {
   }
 
   /**
-   * Get the repayment balance
+   * Get the complete repayment balance
    * for a specific loan.
    */
   async getLoanBalance(
     userId: string,
     loanId: string,
   ) {
-    // Confirm that the loan belongs
-    // to the authenticated user.
     const loan = await this.prisma.loan.findFirst({
       where: {
         id: loanId,
@@ -415,41 +698,43 @@ export class PaymentsService {
       );
     }
 
-    // Calculate total amount that should
-    // be paid across all installments.
-    const totalDue = loan.repayments.reduce(
-      (sum, repayment) =>
-        sum + Number(repayment.amountDue),
+    const totalDue =
+      loan.repayments.reduce(
+        (sum, repayment) =>
+          sum + Number(repayment.amountDue),
+        0,
+      );
+
+    const totalPaid =
+      loan.repayments.reduce(
+        (sum, repayment) =>
+          sum + Number(repayment.amountPaid),
+        0,
+      );
+
+    const outstanding = Math.max(
       0,
+      totalDue - totalPaid,
     );
 
-    // Calculate total amount actually paid.
-    const totalPaid = loan.repayments.reduce(
-      (sum, repayment) =>
-        sum + Number(repayment.amountPaid),
-      0,
-    );
-
-    // Remaining balance
-    const outstanding =
-      totalDue - totalPaid;
-
-    // Number of completely paid installments
     const paidInstallments =
       loan.repayments.filter(
         (repayment) =>
           repayment.status === 'PAID',
       ).length;
 
-    // Total number of installments
     const totalInstallments =
       loan.repayments.length;
 
-    // Find the next unpaid installment
     const nextInstallment =
       loan.repayments.find(
         (repayment) =>
-          repayment.status === 'PENDING',
+          repayment.status ===
+            'PENDING' ||
+          repayment.status ===
+            'PARTIALLY_PAID' ||
+          repayment.status ===
+            'OVERDUE',
       ) ?? null;
 
     return {
@@ -463,9 +748,13 @@ export class PaymentsService {
 
       progressPercent:
         totalDue > 0
-          ? Math.round(
-              (totalPaid / totalDue) *
-                100,
+          ? Math.min(
+              100,
+              Math.round(
+                (totalPaid /
+                  totalDue) *
+                  100,
+              ),
             )
           : 0,
 

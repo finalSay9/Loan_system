@@ -11,8 +11,8 @@ import {
   exportCollections,
   exportDelinquency,
 } from '@/api/backoffice'
-import { AdminLayout } from '../admin/AdminLayout' // adjust path to where you keep AdminLayout
-import './reports.css'
+import { AdminLayout } from '@/components/layout/AdminLayout'
+import './admin-page.css'
 
 // ── Helpers ───────────────────────────────────────────────
 const today = () => new Date().toISOString().split('T')[0]
@@ -55,12 +55,12 @@ const ReportTable: React.FC<{
   totalKeys: TotalDef[]
   emptyMessage: string
 }> = ({ isLoading, rows, totals, columns, totalKeys, emptyMessage }) => {
-  if (isLoading) return <div className="rp-skel" style={{ height: 240 }} />
+  if (isLoading) return <div className="ap-skel" style={{ height: 240 }} />
 
   return (
-    <div className="ad-card" style={{ overflow: 'hidden' }}>
+    <div className="ap-card" style={{ overflow: 'hidden' }}>
       {totals && (
-        <div className="rp-totals">
+        <div className="ap-totals">
           {totalKeys.map(t => (
             <div key={t.key}>
               <small>{t.label}</small>
@@ -69,14 +69,14 @@ const ReportTable: React.FC<{
           ))}
         </div>
       )}
-      <div className="ad-scroll">
+      <div className="ap-scroll">
         <table>
           <thead>
             <tr>{columns.map(c => <th key={c.key} className={c.align === 'right' ? 'r' : ''}>{c.label}</th>)}</tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <tr><td colSpan={columns.length} className="rp-none">{emptyMessage}</td></tr>
+              <tr><td colSpan={columns.length} className="ap-none">{emptyMessage}</td></tr>
             ) : (
               rows.map((row, i) => (
                 <tr key={i}>
@@ -160,26 +160,31 @@ export const AdminReports: React.FC = () => {
 
   return (
     <AdminLayout title="Financial reports" subtitle="Disbursements, collections and overdue loans">
+      <div className="ap">
+      <div className="ap-head">
+        <h1>Financial reports</h1>
+        <p>Disbursements, collections and overdue loans</p>
+      </div>
       {/* Filters */}
-      <div className="ad-card rp-filters">
+      <div className="ap-card ap-filters">
         <i className="ti ti-calendar" aria-hidden="true" />
         <label>From
-          <input className="rp-date" type="date" value={startDate} max={endDate} onChange={e => setStartDate(e.target.value)} />
+          <input className="ap-date" type="date" value={startDate} max={endDate} onChange={e => setStartDate(e.target.value)} />
         </label>
         <label>To
-          <input className="rp-date" type="date" value={endDate} min={startDate} onChange={e => setEndDate(e.target.value)} />
+          <input className="ap-date" type="date" value={endDate} min={startDate} onChange={e => setEndDate(e.target.value)} />
         </label>
-        <div className="rp-quick">
+        <div className="ap-quick">
           {[{ label: '7d', n: 7 }, { label: '30d', n: 30 }, { label: '90d', n: 90 }].map(r => (
             <button key={r.label} type="button"
-              className={`rp-chip${startDate === daysAgo(r.n) && endDate === today() ? ' on' : ''}`}
+              className={`ap-range${startDate === daysAgo(r.n) && endDate === today() ? ' on' : ''}`}
               onClick={() => { setStartDate(daysAgo(r.n)); setEndDate(today()) }}>
               Last {r.label}
             </button>
           ))}
         </div>
         {activeTab !== 'overview' && (
-          <button className="rp-export" onClick={handleExport} disabled={exporting}>
+          <button className="ap-btn ap-export" onClick={handleExport} disabled={exporting}>
             <i className="ti ti-download" aria-hidden="true" />
             {exporting ? 'Exporting…' : 'Export CSV'}
           </button>
@@ -187,10 +192,10 @@ export const AdminReports: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="rp-tabs" role="tablist">
+      <div className="ap-tabs" role="tablist">
         {TABS.map(tab => (
           <button key={tab.key} role="tab" aria-selected={activeTab === tab.key}
-            className={`rp-tab${activeTab === tab.key ? ' on' : ''}`}
+            className={`ap-tab${activeTab === tab.key ? ' on' : ''}`}
             onClick={() => setActiveTab(tab.key)}>
             <i className={`ti ${tab.icon}`} aria-hidden="true" />
             <span>{tab.label}</span>
@@ -201,22 +206,22 @@ export const AdminReports: React.FC = () => {
       {/* Overview */}
       {activeTab === 'overview' && (
         summaryLoading ? (
-          <div className="rp-grid">{[1, 2, 3, 4].map(i => <div key={i} className="rp-skel" style={{ height: 124 }} />)}</div>
+          <div className="ap-grid">{[1, 2, 3, 4].map(i => <div key={i} className="ap-skel" style={{ height: 124 }} />)}</div>
         ) : s && (
           <>
-            <div className="rp-grid">
+            <div className="ap-grid">
               {overviewCards.map(c => (
-                <div key={c.label} className={`ad-card ad-stat${c.hero ? ' hero' : ''}`}>
-                  <div className="ad-stat-top">
+                <div key={c.label} className={`ap-card ap-stat${c.hero ? ' hero' : ''}`}>
+                  <div className="ap-stat-top">
                     <span>{c.label}</span>
-                    <div className={`ad-chip${c.amber ? ' amber' : ''}`}><i className={`ti ${c.icon}`} /></div>
+                    <div className={`ap-chip${c.amber ? ' amber' : ''}`}><i className={`ti ${c.icon}`} /></div>
                   </div>
                   <strong>{c.value}</strong>
                   <em>{c.sub}</em>
                 </div>
               ))}
             </div>
-            <div className="ad-card rp-period">
+            <div className="ap-card ap-period">
               <i className="ti ti-calendar-stats" aria-hidden="true" />
               <span>Period: <b>{formatDate(summary.filters.start)}</b> to <b>{formatDate(summary.filters.end)}</b></span>
             </div>
@@ -265,18 +270,18 @@ export const AdminReports: React.FC = () => {
       {/* Delinquency */}
       {activeTab === 'delinquency' && (
         delLoading ? (
-          <div className="rp-skel" style={{ height: 240 }} />
+          <div className="ap-skel" style={{ height: 240 }} />
         ) : (
           <>
             {delinquency?.totals && (
-              <div className="rp-grid">
+              <div className="ap-grid">
                 {[
                   { label: 'Overdue installments', value: delinquency.totals.delinquent_installments },
                   { label: 'Affected loans',       value: delinquency.totals.delinquent_loans },
                   { label: 'Affected borrowers',   value: delinquency.totals.affected_borrowers },
                   { label: 'Total outstanding',    value: fmtMWK(delinquency.totals.total_outstanding) },
                 ].map(c => (
-                  <div key={c.label} className="rp-warn">
+                  <div key={c.label} className="ap-warn">
                     <small>{c.label}</small>
                     <strong>{c.value}</strong>
                   </div>
@@ -284,8 +289,8 @@ export const AdminReports: React.FC = () => {
               </div>
             )}
 
-            <div className="ad-card" style={{ overflow: 'hidden' }}>
-              <div className="ad-scroll">
+            <div className="ap-card" style={{ overflow: 'hidden' }}>
+              <div className="ap-scroll">
                 <table>
                   <thead>
                     <tr>
@@ -294,7 +299,7 @@ export const AdminReports: React.FC = () => {
                   </thead>
                   <tbody>
                     {(delinquency?.data ?? []).length === 0 ? (
-                      <tr><td colSpan={7} className="rp-none">No delinquent loans. Great news!</td></tr>
+                      <tr><td colSpan={7} className="ap-none">No delinquent loans. Great news!</td></tr>
                     ) : (
                       (delinquency?.data ?? []).map((row: any, i: number) => (
                         <tr key={i} className={row.days_overdue > 30 ? 'late' : ''}>
@@ -304,7 +309,7 @@ export const AdminReports: React.FC = () => {
                           <td>{fmtMWK(row.amount_due)}</td>
                           <td className="paid">{fmtMWK(row.amount_paid)}</td>
                           <td className="owed">{fmtMWK(row.outstanding)}</td>
-                          <td><span className={`rp-days ${row.days_overdue > 30 ? 'hi' : 'lo'}`}>{row.days_overdue}d</span></td>
+                          <td><span className={`ap-days ${row.days_overdue > 30 ? 'hi' : 'lo'}`}>{row.days_overdue}d</span></td>
                         </tr>
                       ))
                     )}
@@ -315,6 +320,7 @@ export const AdminReports: React.FC = () => {
           </>
         )
       )}
+      </div>
     </AdminLayout>
   )
 }
