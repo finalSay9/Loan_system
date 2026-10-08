@@ -310,7 +310,7 @@ model RepaymentSchedule {
   remainingBalance Decimal @map("remaining_balance") @db.Decimal(15, 2)
 
   status InstallmentStatus @default(PENDING)
-  paidAt DateTime?
+  paidAt DateTime? @map("paid_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
