@@ -6234,6 +6234,7 @@ export namespace Prisma {
     interestAmount: Decimal | null
     feeAmount: Decimal | null
     penaltyAmount: Decimal | null
+    penaltyAssessedAt: Date | null
     baseAmountDue: Decimal | null
     amountDue: Decimal | null
     amountPaid: Decimal | null
@@ -6257,6 +6258,7 @@ export namespace Prisma {
     interestAmount: Decimal | null
     feeAmount: Decimal | null
     penaltyAmount: Decimal | null
+    penaltyAssessedAt: Date | null
     baseAmountDue: Decimal | null
     amountDue: Decimal | null
     amountPaid: Decimal | null
@@ -6280,6 +6282,7 @@ export namespace Prisma {
     interestAmount: number
     feeAmount: number
     penaltyAmount: number
+    penaltyAssessedAt: number
     baseAmountDue: number
     amountDue: number
     amountPaid: number
@@ -6337,6 +6340,7 @@ export namespace Prisma {
     interestAmount?: true
     feeAmount?: true
     penaltyAmount?: true
+    penaltyAssessedAt?: true
     baseAmountDue?: true
     amountDue?: true
     amountPaid?: true
@@ -6360,6 +6364,7 @@ export namespace Prisma {
     interestAmount?: true
     feeAmount?: true
     penaltyAmount?: true
+    penaltyAssessedAt?: true
     baseAmountDue?: true
     amountDue?: true
     amountPaid?: true
@@ -6383,6 +6388,7 @@ export namespace Prisma {
     interestAmount?: true
     feeAmount?: true
     penaltyAmount?: true
+    penaltyAssessedAt?: true
     baseAmountDue?: true
     amountDue?: true
     amountPaid?: true
@@ -6493,6 +6499,7 @@ export namespace Prisma {
     interestAmount: Decimal
     feeAmount: Decimal
     penaltyAmount: Decimal
+    penaltyAssessedAt: Date | null
     baseAmountDue: Decimal
     amountDue: Decimal
     amountPaid: Decimal
@@ -6535,6 +6542,7 @@ export namespace Prisma {
     interestAmount?: boolean
     feeAmount?: boolean
     penaltyAmount?: boolean
+    penaltyAssessedAt?: boolean
     baseAmountDue?: boolean
     amountDue?: boolean
     amountPaid?: boolean
@@ -6561,6 +6569,7 @@ export namespace Prisma {
     interestAmount?: boolean
     feeAmount?: boolean
     penaltyAmount?: boolean
+    penaltyAssessedAt?: boolean
     baseAmountDue?: boolean
     amountDue?: boolean
     amountPaid?: boolean
@@ -6585,6 +6594,7 @@ export namespace Prisma {
     interestAmount?: boolean
     feeAmount?: boolean
     penaltyAmount?: boolean
+    penaltyAssessedAt?: boolean
     baseAmountDue?: boolean
     amountDue?: boolean
     amountPaid?: boolean
@@ -6609,6 +6619,7 @@ export namespace Prisma {
     interestAmount?: boolean
     feeAmount?: boolean
     penaltyAmount?: boolean
+    penaltyAssessedAt?: boolean
     baseAmountDue?: boolean
     amountDue?: boolean
     amountPaid?: boolean
@@ -6623,7 +6634,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type RepaymentScheduleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "loanId" | "installmentNumber" | "dueDate" | "principalAmount" | "interestAmount" | "feeAmount" | "penaltyAmount" | "baseAmountDue" | "amountDue" | "amountPaid" | "principalPaid" | "interestPaid" | "feePaid" | "penaltyPaid" | "remainingBalance" | "status" | "paidAt" | "createdAt" | "updatedAt", ExtArgs["result"]["repaymentSchedule"]>
+  export type RepaymentScheduleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "loanId" | "installmentNumber" | "dueDate" | "principalAmount" | "interestAmount" | "feeAmount" | "penaltyAmount" | "penaltyAssessedAt" | "baseAmountDue" | "amountDue" | "amountPaid" | "principalPaid" | "interestPaid" | "feePaid" | "penaltyPaid" | "remainingBalance" | "status" | "paidAt" | "createdAt" | "updatedAt", ExtArgs["result"]["repaymentSchedule"]>
   export type RepaymentScheduleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     loan?: boolean | LoanDefaultArgs<ExtArgs>
     allocations?: boolean | RepaymentSchedule$allocationsArgs<ExtArgs>
@@ -6651,6 +6662,7 @@ export namespace Prisma {
       interestAmount: Prisma.Decimal
       feeAmount: Prisma.Decimal
       penaltyAmount: Prisma.Decimal
+      penaltyAssessedAt: Date | null
       baseAmountDue: Prisma.Decimal
       amountDue: Prisma.Decimal
       amountPaid: Prisma.Decimal
@@ -7096,6 +7108,7 @@ export namespace Prisma {
     readonly interestAmount: FieldRef<"RepaymentSchedule", 'Decimal'>
     readonly feeAmount: FieldRef<"RepaymentSchedule", 'Decimal'>
     readonly penaltyAmount: FieldRef<"RepaymentSchedule", 'Decimal'>
+    readonly penaltyAssessedAt: FieldRef<"RepaymentSchedule", 'DateTime'>
     readonly baseAmountDue: FieldRef<"RepaymentSchedule", 'Decimal'>
     readonly amountDue: FieldRef<"RepaymentSchedule", 'Decimal'>
     readonly amountPaid: FieldRef<"RepaymentSchedule", 'Decimal'>
@@ -12304,6 +12317,7 @@ export namespace Prisma {
     interestAmount: 'interestAmount',
     feeAmount: 'feeAmount',
     penaltyAmount: 'penaltyAmount',
+    penaltyAssessedAt: 'penaltyAssessedAt',
     baseAmountDue: 'baseAmountDue',
     amountDue: 'amountDue',
     amountPaid: 'amountPaid',
@@ -13142,6 +13156,7 @@ export namespace Prisma {
     interestAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: DateTimeNullableFilter<"RepaymentSchedule"> | Date | string | null
     baseAmountDue?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
@@ -13167,6 +13182,7 @@ export namespace Prisma {
     interestAmount?: SortOrder
     feeAmount?: SortOrder
     penaltyAmount?: SortOrder
+    penaltyAssessedAt?: SortOrderInput | SortOrder
     baseAmountDue?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
@@ -13196,6 +13212,7 @@ export namespace Prisma {
     interestAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: DateTimeNullableFilter<"RepaymentSchedule"> | Date | string | null
     baseAmountDue?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
@@ -13221,6 +13238,7 @@ export namespace Prisma {
     interestAmount?: SortOrder
     feeAmount?: SortOrder
     penaltyAmount?: SortOrder
+    penaltyAssessedAt?: SortOrderInput | SortOrder
     baseAmountDue?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
@@ -13252,6 +13270,7 @@ export namespace Prisma {
     interestAmount?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: DateTimeNullableWithAggregatesFilter<"RepaymentSchedule"> | Date | string | null
     baseAmountDue?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalWithAggregatesFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
@@ -14168,6 +14187,7 @@ export namespace Prisma {
     interestAmount: Decimal | DecimalJsLike | number | string
     feeAmount?: Decimal | DecimalJsLike | number | string
     penaltyAmount?: Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: Date | string | null
     baseAmountDue: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
@@ -14193,6 +14213,7 @@ export namespace Prisma {
     interestAmount: Decimal | DecimalJsLike | number | string
     feeAmount?: Decimal | DecimalJsLike | number | string
     penaltyAmount?: Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: Date | string | null
     baseAmountDue: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
@@ -14216,6 +14237,7 @@ export namespace Prisma {
     interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     baseAmountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -14241,6 +14263,7 @@ export namespace Prisma {
     interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     baseAmountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -14265,6 +14288,7 @@ export namespace Prisma {
     interestAmount: Decimal | DecimalJsLike | number | string
     feeAmount?: Decimal | DecimalJsLike | number | string
     penaltyAmount?: Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: Date | string | null
     baseAmountDue: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
@@ -14287,6 +14311,7 @@ export namespace Prisma {
     interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     baseAmountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -14310,6 +14335,7 @@ export namespace Prisma {
     interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     baseAmountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -15375,6 +15401,7 @@ export namespace Prisma {
     interestAmount?: SortOrder
     feeAmount?: SortOrder
     penaltyAmount?: SortOrder
+    penaltyAssessedAt?: SortOrder
     baseAmountDue?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
@@ -15414,6 +15441,7 @@ export namespace Prisma {
     interestAmount?: SortOrder
     feeAmount?: SortOrder
     penaltyAmount?: SortOrder
+    penaltyAssessedAt?: SortOrder
     baseAmountDue?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
@@ -15437,6 +15465,7 @@ export namespace Prisma {
     interestAmount?: SortOrder
     feeAmount?: SortOrder
     penaltyAmount?: SortOrder
+    penaltyAssessedAt?: SortOrder
     baseAmountDue?: SortOrder
     amountDue?: SortOrder
     amountPaid?: SortOrder
@@ -17671,6 +17700,7 @@ export namespace Prisma {
     interestAmount: Decimal | DecimalJsLike | number | string
     feeAmount?: Decimal | DecimalJsLike | number | string
     penaltyAmount?: Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: Date | string | null
     baseAmountDue: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
@@ -17694,6 +17724,7 @@ export namespace Prisma {
     interestAmount: Decimal | DecimalJsLike | number | string
     feeAmount?: Decimal | DecimalJsLike | number | string
     penaltyAmount?: Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: Date | string | null
     baseAmountDue: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
@@ -18027,6 +18058,7 @@ export namespace Prisma {
     interestAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: DateTimeNullableFilter<"RepaymentSchedule"> | Date | string | null
     baseAmountDue?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFilter<"RepaymentSchedule"> | Decimal | DecimalJsLike | number | string
@@ -18595,6 +18627,7 @@ export namespace Prisma {
     interestAmount: Decimal | DecimalJsLike | number | string
     feeAmount?: Decimal | DecimalJsLike | number | string
     penaltyAmount?: Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: Date | string | null
     baseAmountDue: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
@@ -18619,6 +18652,7 @@ export namespace Prisma {
     interestAmount: Decimal | DecimalJsLike | number | string
     feeAmount?: Decimal | DecimalJsLike | number | string
     penaltyAmount?: Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: Date | string | null
     baseAmountDue: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
@@ -18700,6 +18734,7 @@ export namespace Prisma {
     interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     baseAmountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -18724,6 +18759,7 @@ export namespace Prisma {
     interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     baseAmountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -19806,6 +19842,7 @@ export namespace Prisma {
     interestAmount: Decimal | DecimalJsLike | number | string
     feeAmount?: Decimal | DecimalJsLike | number | string
     penaltyAmount?: Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: Date | string | null
     baseAmountDue: Decimal | DecimalJsLike | number | string
     amountDue: Decimal | DecimalJsLike | number | string
     amountPaid?: Decimal | DecimalJsLike | number | string
@@ -19851,6 +19888,7 @@ export namespace Prisma {
     interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     baseAmountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -19874,6 +19912,7 @@ export namespace Prisma {
     interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     baseAmountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -19897,6 +19936,7 @@ export namespace Prisma {
     interestAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     feeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     penaltyAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    penaltyAssessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     baseAmountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string

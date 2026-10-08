@@ -207,6 +207,7 @@ exports.Prisma.RepaymentScheduleScalarFieldEnum = {
   interestAmount: 'interestAmount',
   feeAmount: 'feeAmount',
   penaltyAmount: 'penaltyAmount',
+  penaltyAssessedAt: 'penaltyAssessedAt',
   baseAmountDue: 'baseAmountDue',
   amountDue: 'amountDue',
   amountPaid: 'amountPaid',

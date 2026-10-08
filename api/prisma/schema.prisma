@@ -284,60 +284,38 @@ model Loan {
 // REPAYMENT SCHEDULE
 // ============================================================
 
+
 model RepaymentSchedule {
   id String @id @default(uuid())
-
   loanId String @map("loan_id")
-
   installmentNumber Int @map("installment_number")
-
   dueDate DateTime @map("due_date")
 
-  // ==========================================================
-  // ORIGINAL INSTALLMENT COMPONENTS
-  // ==========================================================
-
   principalAmount Decimal @map("principal_amount") @db.Decimal(15, 2)
-
   interestAmount Decimal @map("interest_amount") @db.Decimal(15, 2)
-
   feeAmount Decimal @default(0) @map("fee_amount") @db.Decimal(15, 2)
 
-  // Penalty starts at zero and may be added later.
   penaltyAmount Decimal @default(0) @map("penalty_amount") @db.Decimal(15, 2)
+  penaltyAssessedAt DateTime? @map("penalty_assessed_at")
 
-  // Original scheduled amount excluding penalties added later.
   baseAmountDue Decimal @map("base_amount_due") @db.Decimal(15, 2)
-
-  // Current total amount due, including penalties.
   amountDue Decimal @map("amount_due") @db.Decimal(15, 2)
 
-  // ==========================================================
-  // PAYMENT TRACKING
-  // ==========================================================
-
   amountPaid Decimal @default(0) @map("amount_paid") @db.Decimal(15, 2)
-
   principalPaid Decimal @default(0) @map("principal_paid") @db.Decimal(15, 2)
-
   interestPaid Decimal @default(0) @map("interest_paid") @db.Decimal(15, 2)
-
   feePaid Decimal @default(0) @map("fee_paid") @db.Decimal(15, 2)
-
   penaltyPaid Decimal @default(0) @map("penalty_paid") @db.Decimal(15, 2)
 
-  // Remaining principal balance after this installment.
   remainingBalance Decimal @map("remaining_balance") @db.Decimal(15, 2)
 
   status InstallmentStatus @default(PENDING)
-
-  paidAt DateTime? @map("paid_at")
+  paidAt DateTime?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   loan Loan @relation(fields: [loanId], references: [id])
-
   allocations PaymentAllocation[]
 
   @@unique([loanId, installmentNumber])
@@ -347,6 +325,7 @@ model RepaymentSchedule {
   @@index([loanId, status])
   @@map("repayment_schedules")
 }
+
 
 // ============================================================
 // TRANSACTION

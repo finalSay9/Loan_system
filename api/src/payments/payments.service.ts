@@ -1,10 +1,12 @@
 
+
 import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from 'prisma/generated/prisma';
 
 import { EventsGateway } from 'src/events/events.gateway';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -19,22 +21,28 @@ export class PaymentsService {
   /**
    * Record a repayment against a disbursed loan.
    *
-   * Payment processing is atomic:
+   * Financial calculations use Prisma.Decimal throughout.
    *
-   * 1. Validate the loan.
-   * 2. Validate idempotency/reference.
-   * 3. Calculate the outstanding balance.
-   * 4. Create the repayment transaction.
-   * 5. Allocate the payment FIFO across installments.
-   * 6. Allocate each installment payment in priority order:
+   * Processing flow:
+   *
+   * 1. Validate request.
+   * 2. Validate the loan.
+   * 3. Check duplicate reference.
+   * 4. Load outstanding schedules.
+   * 5. Calculate outstanding balance.
+   * 6. Create repayment transaction.
+   * 7. Allocate payment FIFO.
+   * 8. Allocate each installment:
    *      penalty -> fee -> interest -> principal
-   * 7. Create PaymentAllocation records.
-   * 8. Update repayment schedules.
-   * 9. Close the loan when all installments are paid.
-   * 10. Write audit logs.
+   * 9. Create PaymentAllocation records.
+   * 10. Update repayment schedules.
+   * 11. Update transaction component totals.
+   * 12. Recalculate loan balance.
+   * 13. Close loan when completely repaid.
+   * 14. Write audit logs.
    *
-   * The WebSocket event is emitted only after the
-   * database transaction successfully commits.
+   * WebSocket notification is emitted only after
+   * the database transaction successfully commits.
    */
   async makeRepayment(
     userId: string,
@@ -47,6 +55,7 @@ export class PaymentsService {
     this.validatePayment(dto);
 
     const reference = dto.reference.trim();
+    const paymentAmount = new Prisma.Decimal(dto.amount);
 
     const result = await this.prisma.$transaction(async (tx) => {
       /**
@@ -70,12 +79,8 @@ export class PaymentsService {
 
       /**
        * ---------------------------------------------------------
-       * 2. Idempotency / duplicate reference protection
+       * 2. Duplicate reference protection
        * ---------------------------------------------------------
-       *
-       * The database also has a UNIQUE constraint on reference.
-       * This application-level check gives the user a meaningful
-       * ConflictException before Prisma reaches the constraint.
        */
       const existingTransaction =
         await tx.transaction.findUnique({
@@ -95,10 +100,8 @@ export class PaymentsService {
        * 3. Get outstanding repayment schedules
        * ---------------------------------------------------------
        *
-       * IMPORTANT:
-       *
-       * PARTIALLY_PAID and OVERDUE installments must remain
-       * eligible for payment.
+       * PENDING, PARTIALLY_PAID and OVERDUE installments
+       * can receive payments.
        *
        * PAID and WAIVED installments are excluded.
        */
@@ -141,17 +144,15 @@ export class PaymentsService {
       const outstandingBefore =
         schedules.reduce(
           (sum, schedule) =>
-            sum +
-            this.calculateScheduleOutstanding(
-              schedule,
+            sum.add(
+              this.calculateScheduleOutstanding(
+                schedule,
+              ),
             ),
-          0,
+          new Prisma.Decimal(0),
         );
 
-      if (
-        dto.amount >
-        outstandingBefore + 0.000001
-      ) {
+      if (paymentAmount.gt(outstandingBefore)) {
         throw new BadRequestException(
           'Payment exceeds the outstanding loan balance',
         );
@@ -159,29 +160,63 @@ export class PaymentsService {
 
       /**
        * ---------------------------------------------------------
-       * 5. Create the repayment transaction
+       * 5. Create repayment transaction
        * ---------------------------------------------------------
+       *
+       * Component totals are calculated during allocation
+       * and written back to this transaction later.
        */
       const transaction =
         await tx.transaction.create({
           data: {
             loanId: dto.loanId,
             type: 'REPAYMENT',
-            amount: dto.amount,
+            amount: paymentAmount,
             reference,
-            providerRef: `MAN-${Date.now()}`,
+
+            /**
+             * This is intentionally left null.
+             *
+             * providerRef should represent a real external
+             * provider transaction/reference when one exists.
+             */
+            providerRef: null,
+
+            principalAmount:
+              new Prisma.Decimal(0),
+
+            interestAmount:
+              new Prisma.Decimal(0),
+
+            feeAmount:
+              new Prisma.Decimal(0),
+
+            penaltyAmount:
+              new Prisma.Decimal(0),
           },
         });
 
       /**
        * ---------------------------------------------------------
-       * 6. Allocate payment across installments
+       * 6. Allocate payment FIFO
        * ---------------------------------------------------------
        */
-      let remainingPayment = dto.amount;
+      let remainingPayment = paymentAmount;
+
+      let totalPrincipalAllocated =
+        new Prisma.Decimal(0);
+
+      let totalInterestAllocated =
+        new Prisma.Decimal(0);
+
+      let totalFeeAllocated =
+        new Prisma.Decimal(0);
+
+      let totalPenaltyAllocated =
+        new Prisma.Decimal(0);
 
       for (const schedule of schedules) {
-        if (remainingPayment <= 0.000001) {
+        if (remainingPayment.lte(0)) {
           break;
         }
 
@@ -191,13 +226,13 @@ export class PaymentsService {
             remainingPayment,
           );
 
-        if (allocation.total <= 0.000001) {
+        if (allocation.total.lte(0)) {
           continue;
         }
 
         /**
          * -------------------------------------------------------
-         * Create immutable payment allocation record
+         * Create immutable allocation record
          * -------------------------------------------------------
          */
         await tx.paymentAllocation.create({
@@ -221,34 +256,81 @@ export class PaymentsService {
 
         /**
          * -------------------------------------------------------
-         * Update repayment schedule
+         * Accumulate transaction-level accounting
+         * -------------------------------------------------------
+         */
+        totalPrincipalAllocated =
+          totalPrincipalAllocated.add(
+            allocation.principal,
+          );
+
+        totalInterestAllocated =
+          totalInterestAllocated.add(
+            allocation.interest,
+          );
+
+        totalFeeAllocated =
+          totalFeeAllocated.add(
+            allocation.fee,
+          );
+
+        totalPenaltyAllocated =
+          totalPenaltyAllocated.add(
+            allocation.penalty,
+          );
+
+        /**
+         * -------------------------------------------------------
+         * Calculate new schedule balances
          * -------------------------------------------------------
          */
         const newPrincipalPaid =
-          Number(schedule.principalPaid) +
-          allocation.principal;
+          new Prisma.Decimal(
+            schedule.principalPaid,
+          ).add(allocation.principal);
 
         const newInterestPaid =
-          Number(schedule.interestPaid) +
-          allocation.interest;
+          new Prisma.Decimal(
+            schedule.interestPaid,
+          ).add(allocation.interest);
 
         const newFeePaid =
-          Number(schedule.feePaid) +
-          allocation.fee;
+          new Prisma.Decimal(
+            schedule.feePaid,
+          ).add(allocation.fee);
 
         const newPenaltyPaid =
-          Number(schedule.penaltyPaid) +
-          allocation.penalty;
+          new Prisma.Decimal(
+            schedule.penaltyPaid,
+          ).add(allocation.penalty);
 
         const newAmountPaid =
-          Number(schedule.amountPaid) +
-          allocation.total;
+          new Prisma.Decimal(
+            schedule.amountPaid,
+          ).add(allocation.total);
+
+        const amountDue =
+          new Prisma.Decimal(
+            schedule.amountDue,
+          );
+
+        /**
+         * Remaining balance must never become negative.
+         */
+        const newRemainingBalance =
+          Prisma.Decimal.max(
+            new Prisma.Decimal(0),
+            amountDue.sub(newAmountPaid),
+          );
 
         const fullyPaid =
-          newAmountPaid >=
-          Number(schedule.amountDue) -
-            0.000001;
+          newRemainingBalance.isZero();
 
+        /**
+         * -------------------------------------------------------
+         * Update repayment schedule
+         * -------------------------------------------------------
+         */
         await tx.repaymentSchedule.update({
           where: {
             id: schedule.id,
@@ -256,33 +338,39 @@ export class PaymentsService {
 
           data: {
             amountPaid: fullyPaid
-              ? schedule.amountDue
+              ? amountDue
               : newAmountPaid,
 
-            principalPaid:
-              fullyPaid
-                ? schedule.principalAmount
-                : newPrincipalPaid,
+            principalPaid: fullyPaid
+              ? new Prisma.Decimal(
+                  schedule.principalAmount,
+                )
+              : newPrincipalPaid,
 
-            interestPaid:
-              fullyPaid
-                ? schedule.interestAmount
-                : newInterestPaid,
+            interestPaid: fullyPaid
+              ? new Prisma.Decimal(
+                  schedule.interestAmount,
+                )
+              : newInterestPaid,
 
-            feePaid:
-              fullyPaid
-                ? schedule.feeAmount
-                : newFeePaid,
+            feePaid: fullyPaid
+              ? new Prisma.Decimal(
+                  schedule.feeAmount,
+                )
+              : newFeePaid,
 
-            penaltyPaid:
-              fullyPaid
-                ? schedule.penaltyAmount
-                : newPenaltyPaid,
+            penaltyPaid: fullyPaid
+              ? new Prisma.Decimal(
+                  schedule.penaltyAmount,
+                )
+              : newPenaltyPaid,
+
+            remainingBalance:
+              newRemainingBalance,
 
             status: fullyPaid
               ? 'PAID'
-              : schedule.status ===
-                  'OVERDUE'
+              : schedule.status === 'OVERDUE'
                 ? 'OVERDUE'
                 : 'PARTIALLY_PAID',
 
@@ -292,16 +380,18 @@ export class PaymentsService {
           },
         });
 
-        remainingPayment -= allocation.total;
+        remainingPayment =
+          remainingPayment.sub(
+            allocation.total,
+          );
       }
 
       /**
-       * Floating-point protection.
-       *
-       * We should never silently lose money because of a
-       * floating-point calculation.
+       * ---------------------------------------------------------
+       * 7. Ensure entire payment was allocated
+       * ---------------------------------------------------------
        */
-      if (remainingPayment > 0.000001) {
+      if (remainingPayment.gt(0)) {
         throw new BadRequestException(
           'Unable to allocate the entire payment',
         );
@@ -309,7 +399,37 @@ export class PaymentsService {
 
       /**
        * ---------------------------------------------------------
-       * 7. Audit payment
+       * 8. Update transaction accounting
+       * ---------------------------------------------------------
+       *
+       * This makes the Transaction itself financially
+       * meaningful without having to reconstruct its
+       * allocation later.
+       */
+      const updatedTransaction =
+        await tx.transaction.update({
+          where: {
+            id: transaction.id,
+          },
+
+          data: {
+            principalAmount:
+              totalPrincipalAllocated,
+
+            interestAmount:
+              totalInterestAllocated,
+
+            feeAmount:
+              totalFeeAllocated,
+
+            penaltyAmount:
+              totalPenaltyAllocated,
+          },
+        });
+
+      /**
+       * ---------------------------------------------------------
+       * 9. Audit payment
        * ---------------------------------------------------------
        */
       await tx.auditLog.create({
@@ -320,16 +440,28 @@ export class PaymentsService {
           entityId: dto.loanId,
 
           afterState: {
-            amount: dto.amount,
+            amount: paymentAmount.toString(),
             reference,
             transactionId: transaction.id,
+
+            principalAmount:
+              totalPrincipalAllocated.toString(),
+
+            interestAmount:
+              totalInterestAllocated.toString(),
+
+            feeAmount:
+              totalFeeAllocated.toString(),
+
+            penaltyAmount:
+              totalPenaltyAllocated.toString(),
           },
         },
       });
 
       /**
        * ---------------------------------------------------------
-       * 8. Recalculate loan balance
+       * 10. Recalculate complete loan balance
        * ---------------------------------------------------------
        */
       const updatedSchedules =
@@ -337,29 +469,43 @@ export class PaymentsService {
           where: {
             loanId: dto.loanId,
           },
-          orderBy: {
-            dueDate: 'asc',
-          },
+          orderBy: [
+            {
+              dueDate: 'asc',
+            },
+            {
+              installmentNumber: 'asc',
+            },
+          ],
         });
 
       const totalDue =
         updatedSchedules.reduce(
           (sum, schedule) =>
-            sum + Number(schedule.amountDue),
-          0,
+            sum.add(
+              new Prisma.Decimal(
+                schedule.amountDue,
+              ),
+            ),
+          new Prisma.Decimal(0),
         );
 
       const totalPaid =
         updatedSchedules.reduce(
           (sum, schedule) =>
-            sum + Number(schedule.amountPaid),
-          0,
+            sum.add(
+              new Prisma.Decimal(
+                schedule.amountPaid,
+              ),
+            ),
+          new Prisma.Decimal(0),
         );
 
-      const outstanding = Math.max(
-        0,
-        totalDue - totalPaid,
-      );
+      const outstanding =
+        Prisma.Decimal.max(
+          new Prisma.Decimal(0),
+          totalDue.sub(totalPaid),
+        );
 
       const remainingInstallments =
         updatedSchedules.filter(
@@ -370,17 +516,17 @@ export class PaymentsService {
 
       /**
        * ---------------------------------------------------------
-       * 9. Determine whether the loan is fully repaid
+       * 11. Determine whether loan is fully repaid
        * ---------------------------------------------------------
        */
       const loanClosed =
         updatedSchedules.length > 0 &&
         remainingInstallments === 0 &&
-        outstanding <= 0.000001;
+        outstanding.isZero();
 
       /**
        * ---------------------------------------------------------
-       * 10. Close the loan
+       * 12. Close loan
        * ---------------------------------------------------------
        */
       if (loanClosed) {
@@ -408,8 +554,10 @@ export class PaymentsService {
             afterState: {
               reason:
                 'All repayment installments paid',
+
               finalPaymentReference:
                 reference,
+
               finalPaymentTransactionId:
                 transaction.id,
             },
@@ -419,34 +567,37 @@ export class PaymentsService {
 
       /**
        * ---------------------------------------------------------
-       * 11. Return post-transaction information
+       * 13. Return post-transaction information
        * ---------------------------------------------------------
        */
+      const progressPercent =
+        totalDue.gt(0)
+          ? Math.min(
+              100,
+              Math.round(
+                totalPaid
+                  .div(totalDue)
+                  .mul(100)
+                  .toNumber(),
+              ),
+            )
+          : 0;
+
       return {
         message: loanClosed
           ? 'Payment recorded — loan fully repaid!'
           : 'Payment recorded successfully',
 
-        data: transaction,
+        data: updatedTransaction,
 
         loanClosed,
 
         balance: {
-          totalDue,
-          totalPaid,
-          outstanding,
+          totalDue: totalDue.toString(),
+          totalPaid: totalPaid.toString(),
+          outstanding: outstanding.toString(),
 
-          progressPercent:
-            totalDue > 0
-              ? Math.min(
-                  100,
-                  Math.round(
-                    (totalPaid /
-                      totalDue) *
-                      100,
-                  ),
-                )
-              : 0,
+          progressPercent,
 
           remainingInstallments,
         },
@@ -491,6 +642,21 @@ export class PaymentsService {
       );
     }
 
+    /**
+     * The database uses Decimal(15,2).
+     *
+     * Therefore accepting more than two decimal places
+     * would create ambiguity in the financial model.
+     */
+    const decimalPlaces =
+      String(dto.amount).split('.')[1]?.length ?? 0;
+
+    if (decimalPlaces > 2) {
+      throw new BadRequestException(
+        'Payment amount cannot have more than 2 decimal places',
+      );
+    }
+
     if (!dto.reference?.trim()) {
       throw new BadRequestException(
         'Payment reference is required',
@@ -503,17 +669,16 @@ export class PaymentsService {
    * on an individual installment.
    */
   private calculateScheduleOutstanding(
-    schedule: {
-      amountDue: unknown;
-      amountPaid: unknown;
-    },
-  ): number {
-    return Math.max(
-      0,
-      Number(schedule.amountDue) -
-        Number(schedule.amountPaid),
-    );
-  }
+  schedule: {
+    amountDue: Prisma.Decimal;
+    amountPaid: Prisma.Decimal;
+  },
+): Prisma.Decimal {
+  return Prisma.Decimal.max(
+    new Prisma.Decimal(0),
+    schedule.amountDue.sub(schedule.amountPaid),
+  );
+}
 
   /**
    * Determine how a payment should be allocated
@@ -526,100 +691,126 @@ export class PaymentsService {
    * 3. Interest
    * 4. Principal
    *
-   * This is deterministic and prevents a payment from
-   * being arbitrarily applied to principal first.
+   * This is deterministic.
    */
-  private calculatePaymentAllocation(
-    schedule: {
-      principalAmount: unknown;
-      interestAmount: unknown;
-      feeAmount: unknown;
-      penaltyAmount: unknown;
+ private calculatePaymentAllocation(
+  schedule: {
+    principalAmount: Prisma.Decimal;
+    interestAmount: Prisma.Decimal;
+    feeAmount: Prisma.Decimal;
+    penaltyAmount: Prisma.Decimal;
 
-      principalPaid: unknown;
-      interestPaid: unknown;
-      feePaid: unknown;
-      penaltyPaid: unknown;
-
-      amountDue: unknown;
-      amountPaid: unknown;
-    },
-    paymentAmount: number,
-  ) {
+    principalPaid: Prisma.Decimal;
+    interestPaid: Prisma.Decimal;
+    feePaid: Prisma.Decimal;
+    penaltyPaid: Prisma.Decimal;
+  },
+  paymentAmount: Prisma.Decimal,
+){
     let remaining = paymentAmount;
 
     /**
-     * Outstanding component balances.
+     * Outstanding penalty.
      */
-    const outstandingPenalty = Math.max(
-      0,
-      Number(schedule.penaltyAmount) -
-        Number(schedule.penaltyPaid),
-    );
+    const outstandingPenalty =
+      Prisma.Decimal.max(
+        new Prisma.Decimal(0),
+        new Prisma.Decimal(
+          schedule.penaltyAmount,
+        ).sub(
+          new Prisma.Decimal(
+            schedule.penaltyPaid,
+          ),
+        ),
+      );
 
-    const outstandingFee = Math.max(
-      0,
-      Number(schedule.feeAmount) -
-        Number(schedule.feePaid),
-    );
+    /**
+     * Outstanding fee.
+     */
+    const outstandingFee =
+      Prisma.Decimal.max(
+        new Prisma.Decimal(0),
+        new Prisma.Decimal(
+          schedule.feeAmount,
+        ).sub(
+          new Prisma.Decimal(schedule.feePaid),
+        ),
+      );
 
-    const outstandingInterest = Math.max(
-      0,
-      Number(schedule.interestAmount) -
-        Number(schedule.interestPaid),
-    );
+    /**
+     * Outstanding interest.
+     */
+    const outstandingInterest =
+      Prisma.Decimal.max(
+        new Prisma.Decimal(0),
+        new Prisma.Decimal(
+          schedule.interestAmount,
+        ).sub(
+          new Prisma.Decimal(
+            schedule.interestPaid,
+          ),
+        ),
+      );
 
-    const outstandingPrincipal = Math.max(
-      0,
-      Number(schedule.principalAmount) -
-        Number(schedule.principalPaid),
-    );
+    /**
+     * Outstanding principal.
+     */
+    const outstandingPrincipal =
+      Prisma.Decimal.max(
+        new Prisma.Decimal(0),
+        new Prisma.Decimal(
+          schedule.principalAmount,
+        ).sub(
+          new Prisma.Decimal(
+            schedule.principalPaid,
+          ),
+        ),
+      );
 
     /**
      * Penalty first.
      */
-    const penalty = Math.min(
+    const penalty = Prisma.Decimal.min(
       remaining,
       outstandingPenalty,
     );
 
-    remaining -= penalty;
+    remaining = remaining.sub(penalty);
 
     /**
      * Fee second.
      */
-    const fee = Math.min(
+    const fee = Prisma.Decimal.min(
       remaining,
       outstandingFee,
     );
 
-    remaining -= fee;
+    remaining = remaining.sub(fee);
 
     /**
      * Interest third.
      */
-    const interest = Math.min(
+    const interest = Prisma.Decimal.min(
       remaining,
       outstandingInterest,
     );
 
-    remaining -= interest;
+    remaining = remaining.sub(interest);
 
     /**
      * Principal last.
      */
-    const principal = Math.min(
+    const principal = Prisma.Decimal.min(
       remaining,
       outstandingPrincipal,
     );
 
-    remaining -= principal;
+    remaining = remaining.sub(principal);
 
-    const total =
-      penalty +
-      fee +
-      interest +
-      principal;
+    const total = penalty
+      .add(fee)
+      .add(interest)
+      .add(principal);
 
     return {
       penalty,
@@ -685,9 +876,14 @@ export class PaymentsService {
 
       include: {
         repayments: {
-          orderBy: {
-            dueDate: 'asc',
-          },
+          orderBy: [
+            {
+              dueDate: 'asc',
+            },
+            {
+              installmentNumber: 'asc',
+            },
+          ],
         },
       },
     });
@@ -701,21 +897,30 @@ export class PaymentsService {
     const totalDue =
       loan.repayments.reduce(
         (sum, repayment) =>
-          sum + Number(repayment.amountDue),
-        0,
+          sum.add(
+            new Prisma.Decimal(
+              repayment.amountDue,
+            ),
+          ),
+        new Prisma.Decimal(0),
       );
 
     const totalPaid =
       loan.repayments.reduce(
         (sum, repayment) =>
-          sum + Number(repayment.amountPaid),
-        0,
+          sum.add(
+            new Prisma.Decimal(
+              repayment.amountPaid,
+            ),
+          ),
+        new Prisma.Decimal(0),
       );
 
-    const outstanding = Math.max(
-      0,
-      totalDue - totalPaid,
-    );
+    const outstanding =
+      Prisma.Decimal.max(
+        new Prisma.Decimal(0),
+        totalDue.sub(totalPaid),
+      );
 
     const paidInstallments =
       loan.repayments.filter(
@@ -729,31 +934,30 @@ export class PaymentsService {
     const nextInstallment =
       loan.repayments.find(
         (repayment) =>
-          repayment.status ===
-            'PENDING' ||
+          repayment.status === 'PENDING' ||
           repayment.status ===
             'PARTIALLY_PAID' ||
-          repayment.status ===
-            'OVERDUE',
+          repayment.status === 'OVERDUE',
       ) ?? null;
 
     return {
       loanId,
 
-      totalDue,
+      totalDue: totalDue.toString(),
 
-      totalPaid,
+      totalPaid: totalPaid.toString(),
 
-      outstanding,
+      outstanding: outstanding.toString(),
 
       progressPercent:
-        totalDue > 0
+        totalDue.gt(0)
           ? Math.min(
               100,
               Math.round(
-                (totalPaid /
-                  totalDue) *
-                  100,
+                totalPaid
+                  .div(totalDue)
+                  .mul(100)
+                  .toNumber(),
               ),
             )
           : 0,
@@ -768,4 +972,3 @@ export class PaymentsService {
     };
   }
 }
-

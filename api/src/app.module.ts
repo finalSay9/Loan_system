@@ -10,6 +10,8 @@ import { PaymentsModule } from './payments/payments.module';
 import { EventsModule } from './events/events.module';
 import { LoanProductsModule } from './loan-products/loan-products.module';
 import { FeedbackService } from './feedback/feedback.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { PenaltiesModule } from './penalties/penalties.module';
 
 @Module({
   imports: [
@@ -17,6 +19,7 @@ import { FeedbackService } from './feedback/feedback.service';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
 
     PrismaModule,
 
@@ -29,6 +32,7 @@ import { FeedbackService } from './feedback/feedback.service';
     FeedbackModule,
     PaymentsModule,
     EventsModule,
+    PenaltiesModule,
   ],
 
   providers: [FeedbackService],
