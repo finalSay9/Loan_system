@@ -3,10 +3,10 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
+
 import { Cron } from '@nestjs/schedule';
+
 import { PenaltyService } from './penalties.service';
-
-
 
 @Injectable()
 export class PenaltyScheduler {
@@ -14,15 +14,13 @@ export class PenaltyScheduler {
     new Logger(PenaltyScheduler.name);
 
   constructor(
-    private readonly penaltyService: PenaltyService,
+    private readonly penaltyService:
+      PenaltyService,
   ) {}
 
   /**
-   * Runs every day at 00:05 Africa/Blantyre.
-   *
-   * We intentionally run shortly after midnight so
-   * installments whose grace period ended yesterday
-   * are assessed as overdue.
+   * Assess overdue installment penalties
+   * every day at 00:05 in Africa/Blantyre.
    */
   @Cron('5 0 * * *', {
     name: 'assess-overdue-penalties',
@@ -33,13 +31,22 @@ export class PenaltyScheduler {
       'Starting overdue penalty assessment...',
     );
 
-    const result =
-      await this.penaltyService
-        .assessOverduePenalties();
+    try {
+      const result =
+        await this.penaltyService
+          .assessOverduePenalties();
 
-    this.logger.log(
-      `Penalty job finished: processed=${result.processed}, skipped=${result.skipped}, failed=${result.failed}`,
-    );
+      this.logger.log(
+        `Penalty job finished: processed=${result.processed}, skipped=${result.skipped}, failed=${result.failed}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        'Overdue penalty job failed',
+        error instanceof Error
+          ? error.stack
+          : String(error),
+      );
+    }
   }
 }
 

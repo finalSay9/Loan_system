@@ -1,13 +1,17 @@
 
 import { Module } from '@nestjs/common';
 
+import { PrismaModule } from '../prisma/prisma.module';
+
 import { PenaltyService } from './penalties.service';
 import { PenaltyScheduler } from './penalty.scheduler';
-import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
+  imports: [
+    PrismaModule,
+  ],
+
   providers: [
-    PrismaService,
     PenaltyService,
     PenaltyScheduler,
   ],
@@ -17,3 +21,4 @@ import { PrismaService } from '../prisma/prisma.service';
   ],
 })
 export class PenaltyModule {}
+

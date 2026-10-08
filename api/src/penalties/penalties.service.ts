@@ -9,19 +9,32 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PenaltyService {
-  private readonly logger = new Logger(PenaltyService.name);
+  private readonly logger =
+    new Logger(PenaltyService.name);
+
+  private readonly systemUserId =
+    process.env.SYSTEM_USER_ID;
 
   constructor(
     private readonly prisma: PrismaService,
-  ) {}
+  ) {
+    if (!this.systemUserId) {
+      throw new Error(
+        'SYSTEM_USER_ID environment variable is not configured.',
+      );
+    }
+  }
 
   /**
-   * Find repayment schedules that:
+   * Find repayment schedules that are eligible for
+   * overdue penalty assessment.
    *
-   * 1. Belong to a disbursed loan
-   * 2. Are not fully paid
-   * 3. Have passed their due date + grace period
-   * 4. Have not already been assessed a penalty
+   * A schedule is eligible when:
+   *
+   * - The loan is DISBURSED
+   * - The installment is not fully paid
+   * - The installment has passed its due date + grace period
+   * - A penalty has not already been assessed
    */
   async assessOverduePenalties(): Promise<{
     processed: number;
@@ -31,41 +44,43 @@ export class PenaltyService {
     const now = new Date();
 
     const schedules =
-    await this.prisma.repaymentSchedule.findMany({
+      await this.prisma.repaymentSchedule.findMany({
         where: {
-        status: {
-            in: ['PENDING', 'PARTIALLY_PAID'],
-        },
+          status: {
+            in: [
+              'PENDING',
+              'PARTIALLY_PAID',
+            ],
+          },
 
-        penaltyAssessedAt: null,
+          penaltyAssessedAt: null,
 
-        loan: {
+          loan: {
             status: 'DISBURSED',
-        },
+          },
         },
 
         include: {
-        loan: {
+          loan: {
             select: {
-            id: true,
-            lateFeeType: true,
-            lateFeeAmount: true,
-            lateFeeRate: true,
-            gracePeriodDays: true,
+              id: true,
+              lateFeeType: true,
+              lateFeeAmount: true,
+              lateFeeRate: true,
+              gracePeriodDays: true,
             },
-        },
+          },
         },
 
         orderBy: [
-        {
+          {
             dueDate: 'asc',
-        },
-        {
+          },
+          {
             installmentNumber: 'asc',
-        },
+          },
         ],
-    });
-
+      });
 
     let processed = 0;
     let skipped = 0;
@@ -73,19 +88,27 @@ export class PenaltyService {
 
     for (const schedule of schedules) {
       try {
-        const eligible = this.isPenaltyEligible(
-          schedule,
-          now,
-        );
-
-        if (!eligible) {
+        if (
+          !this.isPenaltyEligible(
+            schedule,
+            now,
+          )
+        ) {
           skipped++;
           continue;
         }
 
-        await this.assessPenalty(schedule.id, now);
+        const assessed =
+          await this.assessPenalty(
+            schedule.id,
+            now,
+          );
 
-        processed++;
+        if (assessed) {
+          processed++;
+        } else {
+          skipped++;
+        }
       } catch (error) {
         failed++;
 
@@ -109,6 +132,10 @@ export class PenaltyService {
     };
   }
 
+  /**
+   * Determine whether a schedule has passed its
+   * grace period and still has money outstanding.
+   */
   private isPenaltyEligible(
     schedule: {
       dueDate: Date;
@@ -116,43 +143,42 @@ export class PenaltyService {
       amountPaid: Prisma.Decimal;
       loan: {
         gracePeriodDays: number;
-        lateFeeAmount: Prisma.Decimal;
-        lateFeeRate: Prisma.Decimal;
       };
     },
     now: Date,
   ): boolean {
     const gracePeriodEndsAt =
-      new Date(schedule.dueDate);
-
-    gracePeriodEndsAt.setDate(
-      gracePeriodEndsAt.getDate() +
+      this.getGracePeriodEnd(
+        schedule.dueDate,
         schedule.loan.gracePeriodDays,
-    );
+      );
 
     if (now <= gracePeriodEndsAt) {
       return false;
     }
 
     const outstanding =
-      schedule.amountDue.sub(
-        schedule.amountPaid,
+      Prisma.Decimal.max(
+        new Prisma.Decimal(0),
+        schedule.amountDue.sub(
+          schedule.amountPaid,
+        ),
       );
 
     return outstanding.gt(0);
   }
 
   /**
-   * Assess exactly one penalty for one schedule.
+   * Assess one penalty atomically.
    *
-   * The unique idempotency key protects us from
-   * accidentally creating the same penalty twice.
+   * Returns true when this invocation actually
+   * assessed the penalty.
    */
   private async assessPenalty(
     scheduleId: string,
     assessedAt: Date,
-  ): Promise<void> {
-    await this.prisma.$transaction(
+  ): Promise<boolean> {
+    return this.prisma.$transaction(
       async (tx) => {
         const schedule =
           await tx.repaymentSchedule.findUnique({
@@ -166,54 +192,55 @@ export class PenaltyService {
           });
 
         if (!schedule) {
-          return;
+          return false;
         }
 
         /*
-         * Re-check inside the transaction.
+         * Re-check all important conditions inside
+         * the transaction.
          *
-         * This is important because another scheduler
-         * execution may have processed the same schedule
-         * after our initial query.
+         * The initial query is only candidate discovery.
+         * The transaction is the authoritative check.
          */
         if (
           schedule.penaltyAssessedAt !== null
         ) {
-          return;
+          return false;
         }
 
         if (
           schedule.loan.status !== 'DISBURSED'
         ) {
-          return;
+          return false;
         }
 
         if (
           schedule.status === 'PAID' ||
           schedule.status === 'WAIVED'
         ) {
-          return;
+          return false;
         }
 
         const gracePeriodEndsAt =
-          new Date(schedule.dueDate);
-
-        gracePeriodEndsAt.setDate(
-          gracePeriodEndsAt.getDate() +
+          this.getGracePeriodEnd(
+            schedule.dueDate,
             schedule.loan.gracePeriodDays,
-        );
+          );
 
         if (assessedAt <= gracePeriodEndsAt) {
-          return;
+          return false;
         }
 
         const outstanding =
-          schedule.amountDue.sub(
-            schedule.amountPaid,
+          Prisma.Decimal.max(
+            new Prisma.Decimal(0),
+            schedule.amountDue.sub(
+              schedule.amountPaid,
+            ),
           );
 
         if (!outstanding.gt(0)) {
-          return;
+          return false;
         }
 
         const penalty =
@@ -225,12 +252,29 @@ export class PenaltyService {
           );
 
         /*
-         * If the configured penalty is zero,
-         * still mark it as assessed so the scheduler
-         * doesn't repeatedly process this installment.
+         * Capture the state before modification for
+         * the audit record.
          */
+        const beforeState = {
+          status: schedule.status,
+          amountDue:
+            schedule.amountDue.toString(),
+          amountPaid:
+            schedule.amountPaid.toString(),
+          baseAmountDue:
+            schedule.baseAmountDue.toString(),
+          penaltyAmount:
+            schedule.penaltyAmount.toString(),
+          remainingBalance:
+            schedule.remainingBalance.toString(),
+          penaltyAssessedAt:
+            schedule.penaltyAssessedAt,
+        };
+
         const newPenaltyAmount =
-          schedule.penaltyAmount.add(penalty);
+          schedule.penaltyAmount.add(
+            penalty,
+          );
 
         const newAmountDue =
           schedule.baseAmountDue.add(
@@ -245,20 +289,9 @@ export class PenaltyService {
             ),
           );
 
-        const beforeState = {
-          status: schedule.status,
-          penaltyAmount:
-            schedule.penaltyAmount.toString(),
-          amountDue:
-            schedule.amountDue.toString(),
-          amountPaid:
-            schedule.amountPaid.toString(),
-          remainingBalance:
-            schedule.remainingBalance.toString(),
-          penaltyAssessedAt:
-            schedule.penaltyAssessedAt,
-        };
-
+        /*
+         * Update the repayment schedule.
+         */
         await tx.repaymentSchedule.update({
           where: {
             id: schedule.id,
@@ -282,53 +315,71 @@ export class PenaltyService {
         });
 
         /*
-         * Create a deterministic penalty transaction.
-         *
-         * The unique reference/idempotency key makes the
-         * operation naturally idempotent.
+         * Every assessed penalty gets its own
+         * deterministic transaction identity.
          */
         const reference =
           `PENALTY-${schedule.id}`;
 
-        await tx.transaction.create({
-          data: {
-            loanId: schedule.loanId,
+        const idempotencyKey =
+          `PENALTY:${schedule.id}`;
 
-            type: 'PENALTY',
+        /*
+         * Do not create a zero-value financial
+         * transaction.
+         *
+         * We still mark the schedule as assessed
+         * above so it cannot be repeatedly processed.
+         */
+        if (penalty.gt(0)) {
+          await tx.transaction.create({
+            data: {
+              loanId:
+                schedule.loanId,
 
-            amount: penalty,
+              type: 'PENALTY',
 
-            reference,
+              amount:
+                penalty,
 
-            idempotencyKey:
-              `PENALTY:${schedule.id}`,
+              reference,
 
-            penaltyAmount:
-              penalty,
+              idempotencyKey,
 
-            metadata: {
-              scheduleId: schedule.id,
-              installmentNumber:
-                schedule.installmentNumber,
-              assessedAt:
-                assessedAt.toISOString(),
-              reason:
-                'OVERDUE_INSTALLMENT',
+              penaltyAmount:
+                penalty,
+
+              metadata: {
+                scheduleId:
+                  schedule.id,
+
+                installmentNumber:
+                  schedule.installmentNumber,
+
+                assessedAt:
+                  assessedAt.toISOString(),
+
+                reason:
+                  'OVERDUE_INSTALLMENT',
+              },
             },
-          },
-        });
+          });
+        }
 
         const afterState = {
           status: 'OVERDUE',
-
-          penaltyAmount:
-            newPenaltyAmount.toString(),
 
           amountDue:
             newAmountDue.toString(),
 
           amountPaid:
             schedule.amountPaid.toString(),
+
+          baseAmountDue:
+            schedule.baseAmountDue.toString(),
+
+          penaltyAmount:
+            newPenaltyAmount.toString(),
 
           remainingBalance:
             newRemainingBalance.toString(),
@@ -338,18 +389,36 @@ export class PenaltyService {
         };
 
         /*
-         * NOTE:
-         * AuditLog.actorId is currently required.
-         *
-         * We therefore need a system actor for scheduled
-         * operations. This will be added separately rather
-         * than pretending a human performed the action.
+         * Automated financial operations must have
+         * an identifiable audit actor.
          */
+        await tx.auditLog.create({
+          data: {
+            actorId:
+              this.systemUserId!,
+
+            action:
+              'ASSESS_PENALTY',
+
+            entityType:
+              'RepaymentSchedule',
+
+            entityId:
+              schedule.id,
+
+            beforeState,
+
+            afterState,
+          },
+        });
 
         this.logger.log(
-          `Penalty assessed: schedule=${schedule.id}, loan=${schedule.loanId}, amount=${penalty.toString()}`,
+          `Penalty assessed: schedule=${schedule.id}, loan=${schedule.loanId}, penalty=${penalty.toString()}`,
         );
+
+        return true;
       },
+
       {
         isolationLevel:
           Prisma.TransactionIsolationLevel.Serializable,
@@ -357,6 +426,44 @@ export class PenaltyService {
     );
   }
 
+  /**
+   * Calculate the end of the grace period.
+   *
+   * Example:
+   *
+   * Due date:       September 1
+   * Grace period:   3 days
+   * Grace ends:     September 4
+   * Overdue:        September 5
+   */
+  private getGracePeriodEnd(
+    dueDate: Date,
+    gracePeriodDays: number,
+  ): Date {
+    const result =
+      new Date(dueDate);
+
+    result.setDate(
+      result.getDate() +
+        gracePeriodDays,
+    );
+
+    return result;
+  }
+
+  /**
+   * Calculate the penalty using the configuration
+   * snapshot stored directly on the loan.
+   *
+   * FIXED:
+   *
+   *   penalty = lateFeeAmount
+   *
+   * PERCENTAGE:
+   *
+   *   penalty =
+   *     outstanding × lateFeeRate / 100
+   */
   private calculatePenalty(
     lateFeeType: string,
     lateFeeAmount: Prisma.Decimal,
@@ -370,21 +477,12 @@ export class PenaltyService {
       );
     }
 
-    if (lateFeeType === 'PERCENTAGE') {
-      /*
-       * Percentage is calculated against the
-       * outstanding installment balance.
-       *
-       * Example:
-       *
-       * outstanding = 10,000
-       * lateFeeRate = 5
-       *
-       * penalty = 10,000 * 5 / 100
-       *         = 500
-       */
+    if (
+      lateFeeType === 'PERCENTAGE'
+    ) {
       return Prisma.Decimal.max(
         new Prisma.Decimal(0),
+
         outstanding
           .mul(lateFeeRate)
           .div(100),
@@ -394,3 +492,4 @@ export class PenaltyService {
     return new Prisma.Decimal(0);
   }
 }
+

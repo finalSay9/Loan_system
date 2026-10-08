@@ -11,7 +11,7 @@ import { EventsModule } from './events/events.module';
 import { LoanProductsModule } from './loan-products/loan-products.module';
 import { FeedbackService } from './feedback/feedback.service';
 import { ScheduleModule } from '@nestjs/schedule';
-import { PenaltiesModule } from './penalties/penalties.module';
+import { PenaltyModule } from './penalties/penalty.module';
 
 @Module({
   imports: [
@@ -32,7 +32,7 @@ import { PenaltiesModule } from './penalties/penalties.module';
     FeedbackModule,
     PaymentsModule,
     EventsModule,
-    PenaltiesModule,
+    PenaltyModule,
   ],
 
   providers: [FeedbackService],
