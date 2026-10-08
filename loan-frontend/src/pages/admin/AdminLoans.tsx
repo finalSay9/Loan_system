@@ -14,7 +14,7 @@ import { formatCurrency, formatDate, getInitials } from '@/utils'
 import type { Loan, LoanStatus } from '@/types'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import toast from 'react-hot-toast'
-import './admin-page.css'
+
 
 const STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
   PENDING:      { label: 'Pending',      bg: '#FDF1D6', color: '#92620A' },

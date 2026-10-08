@@ -20,6 +20,8 @@ const fetchBorrowers = (search: string) =>
 const fetchBorrower = (id: string) =>
   api.get(`/users/${id}`).then((r) => r.data);
 
+
+
 // ── Sidebar nav (same as AdminDashboard) ─────────────────
 const NAV_ITEMS = [
   { icon: "ti-layout-dashboard", label: "Dashboard", to: "/admin/dashboard" },
@@ -377,9 +379,7 @@ const Topbar: React.FC<{
   </header>
 );
 
-// ══════════════════════════════════════════════════════════
-// PAGE 1: Borrowers list
-// ══════════════════════════════════════════════════════════
+
 export const AdminBorrowers: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -759,9 +759,11 @@ export const AdminBorrowers: React.FC = () => {
   );
 };
 
-// ══════════════════════════════════════════════════════════
-// PAGE 2: Single borrower detail
-// ══════════════════════════════════════════════════════════
+
+
+
+
+
 export const AdminBorrowerDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user, logout } = useAuthStore();
@@ -774,17 +776,76 @@ export const AdminBorrowerDetail: React.FC = () => {
     enabled: !!id,
   });
 
-  const loans: any[] = borrower?.loans ?? [];
-  
-// ✅ fix — use actual repayment data
-const totalBorrowed = loans.reduce((s: number, l: any) => s + Number(l.amount), 0)
-const totalRepaid = loans.reduce((s: number, l: any) => s + (l.balance?.totalPaid ?? 0), 0)
-const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.outstanding ?? 0), 0)
-  const activeLoans = loans.filter((l: any) => l.status === "DISBURSED").length;
-  const kycStyle = KYC_STYLE[borrower?.kycStatus] ?? KYC_STYLE["PENDING"];
+  const loans: any[] = Array.isArray(borrower?.loans)
+    ? borrower.loans
+    : [];
+
+  /*
+   * IMPORTANT:
+   *
+   * A loan's amount is the principal.
+   * It is NOT the total amount the borrower owes.
+   *
+   * The repayment engine is responsible for calculating:
+   *
+   * principal
+   * + interest
+   * + fees
+   * + penalties
+   * - payments
+   * = outstanding
+   *
+   * Therefore this page should consume `loan.balance`
+   * from the backend instead of reconstructing the balance.
+   */
+
+  // Only DISBURSED loans represent money actually borrowed.
+  const disbursedLoans = loans.filter(
+    (loan) => loan.status === "DISBURSED" || loan.status === "CLOSED",
+  );
+
+  // Principal actually disbursed/borrowed.
+  const totalBorrowed = disbursedLoans.reduce(
+    (sum: number, loan: any) => sum + Number(loan.amount ?? 0),
+    0,
+  );
+
+  // Amount actually received through repayments.
+  const totalRepaid = disbursedLoans.reduce(
+    (sum: number, loan: any) =>
+      sum + Number(loan.balance?.totalPaid ?? 0),
+    0,
+  );
+
+  // IMPORTANT:
+  // Do NOT calculate this as totalBorrowed - totalRepaid.
+  //
+  // A borrower may owe:
+  // principal + interest + fees + penalties.
+  //
+  // The repayment engine already calculates the authoritative
+  // outstanding balance for each loan.
+  const totalOutstanding = disbursedLoans.reduce(
+    (sum: number, loan: any) =>
+      sum + Number(loan.balance?.outstanding ?? 0),
+    0,
+  );
+
+  const activeLoans = loans.filter(
+    (loan: any) => loan.status === "DISBURSED",
+  ).length;
+
+  const kycStyle =
+    KYC_STYLE[borrower?.kycStatus] ?? KYC_STYLE["PENDING"];
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#F4F6FA" }}>
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        background: "#F4F6FA",
+      }}
+    >
       {/* Desktop sidebar */}
       <aside
         className="hide-mobile"
@@ -806,7 +867,12 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex" }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            display: "flex",
+          }}
         >
           <div
             style={{
@@ -816,6 +882,7 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
             }}
             onClick={() => setSidebarOpen(false)}
           />
+
           <aside
             style={{
               position: "relative",
@@ -840,6 +907,7 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
             >
               ✕
             </button>
+
             <Sidebar
               user={user}
               logout={logout}
@@ -884,8 +952,12 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
               padding: 0,
             }}
           >
-            <i className="ti ti-arrow-left" style={{ fontSize: 16 }} /> Back to
-            borrowers
+            <i
+              className="ti ti-arrow-left"
+              style={{ fontSize: 16 }}
+            />
+
+            Back to borrowers
           </button>
 
           {isLoading ? (
@@ -897,10 +969,19 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
               }}
             >
               <div
-                style={{ height: 420, borderRadius: 12, background: "#E5E7EB" }}
+                style={{
+                  height: 420,
+                  borderRadius: 12,
+                  background: "#E5E7EB",
+                }}
               />
+
               <div
-                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                }}
               >
                 <div
                   style={{
@@ -909,6 +990,7 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                     background: "#E5E7EB",
                   }}
                 />
+
                 <div
                   style={{
                     height: 260,
@@ -937,10 +1019,18 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                 alignItems: "start",
               }}
             >
-              {/* ── LEFT: Profile card ── */}
+              {/* ===================================================== */}
+              {/* LEFT COLUMN */}
+              {/* ===================================================== */}
+
               <div
-                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                }}
               >
+                {/* Profile card */}
                 <div
                   style={{
                     background: "#fff",
@@ -954,12 +1044,18 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                   <div
                     style={{
                       height: 72,
-                      background: "linear-gradient(135deg,#1a3a6b,#2563EB)",
+                      background:
+                        "linear-gradient(135deg,#1a3a6b,#2563EB)",
                     }}
                   />
 
-                  {/* Avatar */}
-                  <div style={{ padding: "0 20px 20px", marginTop: -40 }}>
+                  {/* Avatar + details */}
+                  <div
+                    style={{
+                      padding: "0 20px 20px",
+                      marginTop: -40,
+                    }}
+                  >
                     {borrower.avatarUrl ? (
                       <img
                         src={`http://localhost:3200${borrower.avatarUrl}`}
@@ -970,7 +1066,8 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                           borderRadius: "50%",
                           objectFit: "cover",
                           border: "3px solid #fff",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                          boxShadow:
+                            "0 2px 8px rgba(0,0,0,0.15)",
                           display: "block",
                           marginBottom: 12,
                         }}
@@ -983,7 +1080,8 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                           borderRadius: "50%",
                           background: "#1a3a6b",
                           border: "3px solid #fff",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                          boxShadow:
+                            "0 2px 8px rgba(0,0,0,0.15)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1012,6 +1110,7 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                     >
                       {borrower.name}
                     </div>
+
                     <span
                       style={{
                         display: "inline-flex",
@@ -1032,10 +1131,11 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                           background: "currentColor",
                         }}
                       />
+
                       KYC {borrower.kycStatus}
                     </span>
 
-                    {/* Info rows */}
+                    {/* Borrower information */}
                     <div
                       style={{
                         marginTop: 20,
@@ -1078,7 +1178,8 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                             alignItems: "flex-start",
                             gap: 10,
                             padding: "10px 0",
-                            borderBottom: "1px solid #F9FAFB",
+                            borderBottom:
+                              "1px solid #F9FAFB",
                           }}
                         >
                           <i
@@ -1091,7 +1192,13 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                               width: 18,
                             }}
                           />
-                          <div style={{ flex: 1, minWidth: 0 }}>
+
+                          <div
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                            }}
+                          >
                             <div
                               style={{
                                 fontSize: 10,
@@ -1103,6 +1210,7 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                             >
                               {label}
                             </div>
+
                             <div
                               style={{
                                 fontSize: 13,
@@ -1120,13 +1228,18 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                   </div>
                 </div>
 
-                {/* ── Total amount borrowed card ── */}
+                {/* ================================================= */}
+                {/* FINANCIAL SUMMARY */}
+                {/* ================================================= */}
+
                 <div
                   style={{
-                    background: "linear-gradient(135deg,#1a3a6b,#2563EB)",
+                    background:
+                      "linear-gradient(135deg,#1a3a6b,#2563EB)",
                     borderRadius: 16,
                     padding: 20,
-                    boxShadow: "0 4px 12px rgba(26,58,107,0.35)",
+                    boxShadow:
+                      "0 4px 12px rgba(26,58,107,0.35)",
                   }}
                 >
                   <div
@@ -1141,6 +1254,7 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                   >
                     Financial Summary
                   </div>
+
                   {[
                     {
                       label: "Total Borrowed",
@@ -1155,6 +1269,12 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                       accent: "#4ADE80",
                     },
                     {
+                      label: "Outstanding",
+                      value: formatCurrency(totalOutstanding),
+                      icon: "ti-wallet",
+                      accent: "#FCA5A5",
+                    },
+                    {
                       label: "Active Loans",
                       value: String(activeLoans),
                       icon: "ti-clock",
@@ -1166,74 +1286,93 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                       icon: "ti-files",
                       accent: "#C4B5FD",
                     },
-                  ].map(({ label, value, icon, accent }) => (
-                    <div
-                      key={label}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "10px 0",
-                        borderBottom: "1px solid rgba(255,255,255,0.1)",
-                      }}
-                    >
+                  ].map(
+                    ({ label, value, icon, accent }) => (
                       <div
+                        key={label}
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: 8,
+                          justifyContent: "space-between",
+                          padding: "10px 0",
+                          borderBottom:
+                            "1px solid rgba(255,255,255,0.1)",
                         }}
                       >
                         <div
                           style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 7,
-                            background: "rgba(255,255,255,0.12)",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
+                            gap: 8,
                           }}
                         >
-                          <i
-                            className={`ti ${icon}`}
-                            style={{ fontSize: 14, color: accent }}
-                          />
+                          <div
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 7,
+                              background:
+                                "rgba(255,255,255,0.12)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <i
+                              className={`ti ${icon}`}
+                              style={{
+                                fontSize: 14,
+                                color: accent,
+                              }}
+                            />
+                          </div>
+
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color:
+                                "rgba(255,255,255,0.7)",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {label}
+                          </span>
                         </div>
+
                         <span
                           style={{
-                            fontSize: 12,
-                            color: "rgba(255,255,255,0.7)",
-                            fontWeight: 500,
+                            fontSize: 14,
+                            fontWeight: 800,
+                            color: "#fff",
                           }}
                         >
-                          {label}
+                          {value}
                         </span>
                       </div>
-                      <span
-                        style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}
-                      >
-                        {value}
-                      </span>
-                    </div>
-                  ))}
+                    ),
+                  )}
                 </div>
               </div>
 
-              {/* ── RIGHT: Loans list ── */}
+              {/* ===================================================== */}
+              {/* RIGHT COLUMN — LOAN HISTORY */}
+              {/* ===================================================== */}
+
               <div
                 style={{
                   background: "#fff",
                   border: "1px solid #E5E7EB",
                   borderRadius: 16,
                   overflow: "hidden",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                  boxShadow:
+                    "0 1px 4px rgba(0,0,0,0.06)",
                 }}
               >
                 <div
                   style={{
                     padding: "18px 20px",
-                    borderBottom: "1px solid #F3F4F6",
+                    borderBottom:
+                      "1px solid #F3F4F6",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -1249,12 +1388,19 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                     >
                       Loan History
                     </div>
+
                     <div
-                      style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}
+                      style={{
+                        fontSize: 12,
+                        color: "#6B7280",
+                        marginTop: 2,
+                      }}
                     >
-                      {loans.length} loan{loans.length !== 1 ? "s" : ""} total
+                      {loans.length} loan
+                      {loans.length !== 1 ? "s" : ""} total
                     </div>
                   </div>
+
                   <div
                     style={{
                       width: 36,
@@ -1268,7 +1414,10 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                   >
                     <i
                       className="ti ti-files"
-                      style={{ fontSize: 18, color: "#4F46E5" }}
+                      style={{
+                        fontSize: 18,
+                        color: "#4F46E5",
+                      }}
                     />
                   </div>
                 </div>
@@ -1290,153 +1439,264 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                         opacity: 0.4,
                       }}
                     />
-                    <p style={{ fontSize: 13 }}>No loans yet</p>
+
+                    <p style={{ fontSize: 13 }}>
+                      No loans yet
+                    </p>
                   </div>
                 ) : (
                   <div style={{ overflowX: "auto" }}>
                     <table
-                      style={{ width: "100%", borderCollapse: "collapse" }}
+                      style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                      }}
                     >
                       <thead>
-                        <tr style={{ background: "#F9FAFB" }}>
+                        <tr
+                          style={{
+                            background: "#F9FAFB",
+                          }}
+                        >
                           {[
                             "#",
                             "Date",
                             "Purpose",
-                            "Amount",
+                            "Principal",
                             "Term",
+                            "Outstanding",
                             "Status",
-                          ].map((h) => (
+                          ].map((heading) => (
                             <th
-                              key={h}
+                              key={heading}
                               style={{
-                                padding: "10px 16px",
+                                padding:
+                                  "10px 16px",
                                 fontSize: 11,
                                 fontWeight: 700,
                                 color: "#6B7280",
                                 textAlign: "left",
-                                textTransform: "uppercase",
-                                letterSpacing: ".05em",
-                                borderBottom: "1px solid #F3F4F6",
-                                whiteSpace: "nowrap",
+                                textTransform:
+                                  "uppercase",
+                                letterSpacing:
+                                  ".05em",
+                                borderBottom:
+                                  "1px solid #F3F4F6",
+                                whiteSpace:
+                                  "nowrap",
                               }}
                             >
-                              {h}
+                              {heading}
                             </th>
                           ))}
                         </tr>
                       </thead>
+
                       <tbody>
-                        {loans.map((loan: any, idx: number) => {
-                          const pill =
-                            STATUS_PILL[loan.status] ?? STATUS_PILL["CLOSED"];
-                          return (
-                            <tr
-                              key={loan.id}
-                              style={{
-                                borderBottom: "1px solid #F9FAFB",
-                                transition: "background .1s",
-                              }}
-                              onMouseEnter={(e) =>
-                                (e.currentTarget.style.background = "#F9FAFB")
-                              }
-                              onMouseLeave={(e) =>
-                                (e.currentTarget.style.background =
-                                  "transparent")
-                              }
-                            >
-                              <td
+                        {loans.map(
+                          (
+                            loan: any,
+                            idx: number,
+                          ) => {
+                            const pill =
+                              STATUS_PILL[
+                                loan.status
+                              ] ??
+                              STATUS_PILL[
+                                "CLOSED"
+                              ];
+
+                            const outstanding =
+                              Number(
+                                loan.balance
+                                  ?.outstanding ??
+                                  0,
+                              );
+
+                            return (
+                              <tr
+                                key={loan.id}
                                 style={{
-                                  padding: "13px 16px",
-                                  fontSize: 12,
-                                  color: "#9CA3AF",
-                                  fontWeight: 600,
+                                  borderBottom:
+                                    "1px solid #F9FAFB",
+                                  transition:
+                                    "background .1s",
                                 }}
+                                onMouseEnter={(
+                                  e,
+                                ) =>
+                                  (e.currentTarget.style.background =
+                                    "#F9FAFB")
+                                }
+                                onMouseLeave={(
+                                  e,
+                                ) =>
+                                  (e.currentTarget.style.background =
+                                    "transparent")
+                                }
                               >
-                                #{idx + 1}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "13px 16px",
-                                  fontSize: 13,
-                                  color: "#6B7280",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {formatDate(loan.createdAt)}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "13px 16px",
-                                  fontSize: 13,
-                                  color: "#374151",
-                                  maxWidth: 200,
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {loan.purpose}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "13px 16px",
-                                  fontSize: 13,
-                                  fontWeight: 700,
-                                  color: "#111827",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {formatCurrency(Number(loan.amount))}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "13px 16px",
-                                  fontSize: 13,
-                                  color: "#374151",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {loan.termMonths} mo
-                              </td>
-                              <td style={{ padding: "13px 16px" }}>
-                                <span
+                                <td
                                   style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 5,
-                                    padding: "4px 10px",
-                                    borderRadius: 99,
-                                    fontSize: 11,
+                                    padding:
+                                      "13px 16px",
+                                    fontSize: 12,
+                                    color:
+                                      "#9CA3AF",
                                     fontWeight: 600,
-                                    ...pill.style,
+                                  }}
+                                >
+                                  #{idx + 1}
+                                </td>
+
+                                <td
+                                  style={{
+                                    padding:
+                                      "13px 16px",
+                                    fontSize: 13,
+                                    color:
+                                      "#6B7280",
+                                    whiteSpace:
+                                      "nowrap",
+                                  }}
+                                >
+                                  {formatDate(
+                                    loan.createdAt,
+                                  )}
+                                </td>
+
+                                <td
+                                  style={{
+                                    padding:
+                                      "13px 16px",
+                                    fontSize: 13,
+                                    color:
+                                      "#374151",
+                                    maxWidth: 200,
+                                    overflow:
+                                      "hidden",
+                                    textOverflow:
+                                      "ellipsis",
+                                    whiteSpace:
+                                      "nowrap",
+                                  }}
+                                >
+                                  {loan.purpose}
+                                </td>
+
+                                <td
+                                  style={{
+                                    padding:
+                                      "13px 16px",
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    color:
+                                      "#111827",
+                                    whiteSpace:
+                                      "nowrap",
+                                  }}
+                                >
+                                  {formatCurrency(
+                                    Number(
+                                      loan.amount ??
+                                        0,
+                                    ),
+                                  )}
+                                </td>
+
+                                <td
+                                  style={{
+                                    padding:
+                                      "13px 16px",
+                                    fontSize: 13,
+                                    color:
+                                      "#374151",
+                                    whiteSpace:
+                                      "nowrap",
+                                  }}
+                                >
+                                  {loan.termValue ??
+                                    "—"}{" "}
+                                  {String(
+                                    loan.termUnit ??
+                                      "",
+                                  ).toLowerCase()}
+                                </td>
+
+                                <td
+                                  style={{
+                                    padding:
+                                      "13px 16px",
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    color:
+                                      outstanding >
+                                      0
+                                        ? "#DC2626"
+                                        : "#16A34A",
+                                    whiteSpace:
+                                      "nowrap",
+                                  }}
+                                >
+                                  {formatCurrency(
+                                    outstanding,
+                                  )}
+                                </td>
+
+                                <td
+                                  style={{
+                                    padding:
+                                      "13px 16px",
                                   }}
                                 >
                                   <span
                                     style={{
-                                      width: 5,
-                                      height: 5,
-                                      borderRadius: "50%",
-                                      background: "currentColor",
+                                      display:
+                                        "inline-flex",
+                                      alignItems:
+                                        "center",
+                                      gap: 5,
+                                      padding:
+                                        "4px 10px",
+                                      borderRadius:
+                                        99,
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      ...pill.style,
                                     }}
-                                  />
-                                  {pill.label}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                                  >
+                                    <span
+                                      style={{
+                                        width: 5,
+                                        height: 5,
+                                        borderRadius:
+                                          "50%",
+                                        background:
+                                          "currentColor",
+                                      }}
+                                    />
+
+                                    {pill.label}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          },
+                        )}
                       </tbody>
                     </table>
                   </div>
                 )}
 
-                {/* Bottom summary bar */}
+                {/* ================================================= */}
+                {/* BOTTOM FINANCIAL SUMMARY */}
+                {/* ================================================= */}
+
                 {loans.length > 0 && (
                   <div
                     style={{
                       padding: "14px 20px",
-                      borderTop: "1px solid #F3F4F6",
+                      borderTop:
+                        "1px solid #F3F4F6",
                       background: "#F9FAFB",
                       display: "flex",
                       gap: 24,
@@ -1446,37 +1706,61 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
                     {[
                       {
                         label: "Total borrowed",
-                        value: formatCurrency(totalBorrowed),
+                        value:
+                          formatCurrency(
+                            totalBorrowed,
+                          ),
                         color: "#1a3a6b",
                       },
                       {
                         label: "Total repaid",
-                        value: formatCurrency(totalRepaid),
+                        value:
+                          formatCurrency(
+                            totalRepaid,
+                          ),
                         color: "#16A34A",
                       },
                       {
                         label: "Outstanding",
-                        value: formatCurrency(totalBorrowed - totalRepaid),
+                        value:
+                          formatCurrency(
+                            totalOutstanding,
+                          ),
                         color: "#DC2626",
                       },
-                    ].map(({ label, value, color }) => (
-                      <div key={label}>
-                        <div
-                          style={{
-                            fontSize: 10,
-                            color: "#9CA3AF",
-                            textTransform: "uppercase",
-                            letterSpacing: ".04em",
-                            marginBottom: 2,
-                          }}
-                        >
-                          {label}
+                    ].map(
+                      ({
+                        label,
+                        value,
+                        color,
+                      }) => (
+                        <div key={label}>
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: "#9CA3AF",
+                              textTransform:
+                                "uppercase",
+                              letterSpacing:
+                                ".04em",
+                              marginBottom: 2,
+                            }}
+                          >
+                            {label}
+                          </div>
+
+                          <div
+                            style={{
+                              fontSize: 15,
+                              fontWeight: 800,
+                              color,
+                            }}
+                          >
+                            {value}
+                          </div>
                         </div>
-                        <div style={{ fontSize: 15, fontWeight: 800, color }}>
-                          {value}
-                        </div>
-                      </div>
-                    ))}
+                      ),
+                    )}
                   </div>
                 )}
               </div>
@@ -1490,9 +1774,13 @@ const totalOutstanding = loans.reduce((s: number, l: any) => s + (l.balance?.out
           .hide-mobile{display:none!important}
           .main-shift{margin-left:0!important}
           .menu-btn-admin{display:flex!important}
-          div[style*="grid-template-columns: 300px"]{grid-template-columns:1fr!important}
+          div[style*="grid-template-columns: 300px"]{
+            grid-template-columns:1fr!important
+          }
         }
       `}</style>
     </div>
   );
 };
+
+
