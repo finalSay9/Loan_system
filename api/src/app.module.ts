@@ -12,6 +12,7 @@ import { LoanProductsModule } from './loan-products/loan-products.module';
 import { FeedbackService } from './feedback/feedback.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PenaltyModule } from './penalties/penalty.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PenaltyModule } from './penalties/penalty.module';
 
     UsersModule,
     AuthModule,
+    NotificationsModule,
 
     LoanProductsModule,
     LoansModule,
