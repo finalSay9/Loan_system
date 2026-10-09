@@ -1,5 +1,6 @@
 
 import {
+  Inject,
   Injectable,
   Logger,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ export class PenaltyService {
     process.env.SYSTEM_USER_ID;
 
   constructor(
+    @Inject(PrismaService)
     private readonly prisma: PrismaService,
   ) {
     if (!this.systemUserId) {
@@ -41,6 +43,11 @@ export class PenaltyService {
     skipped: number;
     failed: number;
   }> {
+     console.log('PrismaService injected:', !!this.prisma);
+  console.log(
+    'repaymentSchedule delegate:',
+    !!this.prisma?.repaymentSchedule,
+  );
     const now = new Date();
 
     const schedules =

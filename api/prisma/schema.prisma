@@ -12,6 +12,18 @@ datasource db {
 // ENUMS
 // ============================================================
 
+enum NotificationType {
+  LOAN_APPROVED
+  LOAN_REJECTED
+  LOAN_DISBURSED
+  REPAYMENT_RECEIVED
+  REPAYMENT_REMINDER
+  INSTALLMENT_OVERDUE
+  PENALTY_ASSESSED
+}
+
+
+
 enum Role {
   BORROWER
   LOAN_OFFICER
@@ -119,6 +131,7 @@ model User {
 
   // Loans disbursed by this user
   disbursedLoans Loan[] @relation("LoanDisbursedBy")
+  notifications Notification[]
 
   @@map("users")
 }
@@ -471,4 +484,23 @@ model Feedback {
   @@index([userId])
   @@index([loanId])
   @@map("feedback")
+}
+
+
+model Notification {
+  id             String           @id @default(uuid())
+  userId         String           @map("user_id")
+  type           NotificationType
+  title          String
+  message        String
+  data           Json?
+  idempotencyKey String?          @unique @map("idempotency_key")
+  readAt         DateTime?        @map("read_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("notifications")
 }

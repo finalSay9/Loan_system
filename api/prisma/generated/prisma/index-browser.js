@@ -270,6 +270,18 @@ exports.Prisma.FeedbackScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.NotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  title: 'title',
+  message: 'message',
+  data: 'data',
+  idempotencyKey: 'idempotencyKey',
+  readAt: 'readAt',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -363,6 +375,16 @@ exports.TransactionType = exports.$Enums.TransactionType = {
   ADJUSTMENT: 'ADJUSTMENT'
 };
 
+exports.NotificationType = exports.$Enums.NotificationType = {
+  LOAN_APPROVED: 'LOAN_APPROVED',
+  LOAN_REJECTED: 'LOAN_REJECTED',
+  LOAN_DISBURSED: 'LOAN_DISBURSED',
+  REPAYMENT_RECEIVED: 'REPAYMENT_RECEIVED',
+  REPAYMENT_REMINDER: 'REPAYMENT_REMINDER',
+  INSTALLMENT_OVERDUE: 'INSTALLMENT_OVERDUE',
+  PENALTY_ASSESSED: 'PENALTY_ASSESSED'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   LoanProduct: 'LoanProduct',
@@ -371,7 +393,8 @@ exports.Prisma.ModelName = {
   Transaction: 'Transaction',
   PaymentAllocation: 'PaymentAllocation',
   AuditLog: 'AuditLog',
-  Feedback: 'Feedback'
+  Feedback: 'Feedback',
+  Notification: 'Notification'
 };
 
 /**

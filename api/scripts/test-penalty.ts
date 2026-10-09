@@ -5,6 +5,9 @@ import { NestFactory } from '@nestjs/core';
 
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { PenaltyService } from '../src/penalties/penalties.service';
+import { PrismaService } from '../src/prisma/prisma.service';
+import 'reflect-metadata';
+import { PARAMTYPES_METADATA } from '@nestjs/common/constants';
 
 @Module({
   imports: [PrismaModule],
@@ -15,11 +18,40 @@ class PenaltyTestModule {}
 async function main() {
   const app = await NestFactory.createApplicationContext(
     PenaltyTestModule,
+    
   );
+  console.log(
+  'Constructor dependencies:',
+  Reflect.getMetadata(
+    PARAMTYPES_METADATA,
+    PenaltyService,
+  )?.map((dependency: unknown) =>
+    typeof dependency === 'function'
+      ? dependency.name
+      : dependency,
+  ),
+);
+
+console.log(
+  'PenaltyService Prisma token matches imported token:',
+  Reflect.getMetadata(
+    PARAMTYPES_METADATA,
+    PenaltyService,
+  )?.[0] === PrismaService,
+);
+
+console.log(
+  'PrismaService registered in module:',
+  app.get(PrismaService, { strict: false })?.constructor?.name,
+);
 
   try {
     const penaltyService =
       app.get(PenaltyService);
+       console.log(
+    'Resolved PrismaService:',
+    app.get(PrismaService) instanceof PrismaService,
+  );
 
     const result =
       await penaltyService.assessOverduePenalties();
