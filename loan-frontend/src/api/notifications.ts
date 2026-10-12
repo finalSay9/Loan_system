@@ -23,7 +23,7 @@ export const getNotifications = (params?: { page?: number; limit?: number; unrea
   api.get<NotificationPage>('/notifications', { params }).then(r => r.data)
 
 export const getUnreadCount = () =>
-  api.get<{ count: number }>('/notifications/unread-count').then(r => r.data.count)
+  api.get<{ unreadCount: number }>('/notifications/unread-count').then(r => r.data.unreadCount)
 
 export const markNotificationRead = (id: string) =>
   api.patch(`/notifications/${id}/read`).then(r => r.data)

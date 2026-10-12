@@ -37,9 +37,25 @@ export const useSocket = () => {
 
     // NEW — the event name must match what your notifications gateway emits.
     socket.on('notification:new', (n: { title?: string; message?: string }) => {
-      qc.invalidateQueries({ queryKey: ['notifications'] })
-      if (n?.title) toast(n.title, { icon: '🔔' })
-    })
+  // Refresh the unread badge.
+  void qc.invalidateQueries({
+    queryKey: ['notifications', 'unread-count'],
+  })
+
+  // Refresh the notification list if it has been fetched.
+  void qc.invalidateQueries({
+    queryKey: ['notifications', 'recent'],
+  })
+
+  // Refresh the full notifications page as well.
+  void qc.invalidateQueries({
+    queryKey: ['notifications'],
+  })
+
+  if (n?.title) {
+    toast(n.title, { icon: '🔔' })
+  }
+})
 
     return () => {
       socket?.disconnect()
