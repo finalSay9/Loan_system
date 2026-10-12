@@ -15,7 +15,7 @@ import { LoanDetail } from '@/pages/loans/LoanDetail'
 import { ApplyLoan } from '@/pages/loans/ApplyLoan'
 import { Profile } from '@/pages/profile/Profile'
 import { Transactions } from '@/pages/transactions/Transactions'
-import { NotificationBell } from '@/components/notifications/NotificationBell'
+import { Notifications } from '@/pages/notifications/Notifications'
 
 import { AdminLoans } from '@/pages/admin/AdminLoans'
 import { AdminDashboard } from '@/pages/admin/AdminDashboard'
@@ -76,7 +76,7 @@ export default function App() {
             <Route path="/loans/apply" element={<AppLayout><ApplyLoan /></AppLayout>} />
             <Route path="/loans/:id" element={<AppLayout><LoanDetail /></AppLayout>} />
             <Route path="/transactions" element={<AppLayout><Transactions /></AppLayout>} />
-            <Route path="/notifications" element={<AppLayout><NotificationBell tone="dark" /></AppLayout>} />
+            <Route path="/notifications" element={<AppLayout><Notifications tone="dark" /></AppLayout>} />
             <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
 
             {/* ── Admin ──────────────────────────────────────── */}
@@ -105,7 +105,7 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminLayout title="Notifications">
-                    <NotificationBell tone="light" />
+                    <Notifications tone="light" />
                   </AdminLayout>
                 </AdminRoute>
               }
