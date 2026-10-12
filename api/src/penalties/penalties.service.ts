@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 
-import { Prisma } from 'prisma/generated/prisma';
+import { Prisma } from '../../prisma/generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()

@@ -11,7 +11,7 @@ import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { KycStatus } from 'prisma/generated/prisma';
+import { KycStatus } from '../../prisma/generated/prisma';
 
 @Injectable()
 export class UsersService {

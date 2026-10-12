@@ -4,10 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { Prisma } from 'prisma/generated/prisma';
+import { Prisma } from '../../prisma/generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 
-import type { NotificationType } from 'prisma/generated/prisma';
+import type { NotificationType } from '../../prisma/generated/prisma';
 
 @Injectable()
 export class NotificationsService {

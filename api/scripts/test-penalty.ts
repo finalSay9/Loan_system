@@ -3,9 +3,9 @@ import 'dotenv/config';
 import { Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
-import { PrismaModule } from '../src/prisma/prisma.module';
+import { PrismaModule } from '../src/prismad/prisma.module';
 import { PenaltyService } from '../src/penalties/penalties.service';
-import { PrismaService } from '../src/prisma/prisma.service';
+import { PrismaService } from '../src/prismad/prisma.service';
 import 'reflect-metadata';
 import { PARAMTYPES_METADATA } from '@nestjs/common/constants';
 

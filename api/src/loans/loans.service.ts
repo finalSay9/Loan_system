@@ -2,6 +2,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Logger,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -20,16 +21,42 @@ import {
   RepaymentFrequency,
   TermUnit,
   TransactionType,
-} from 'prisma/generated/prisma';
+} from '../../prisma/generated/prisma';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationType } from '../../prisma/generated/prisma'
 
 @Injectable()
 export class LoansService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
-  // ============================================================
-  // APPLY FOR LOAN
-  // ============================================================
+/***
+ * a logger and a helper that prevents a notification error
+ * from making a successfully completed loan operation
+ *  appear to have failed
+ */
+private readonly logger = new Logger(LoansService.name);
 
+private async notifyBorrower(input: {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data?: Record<string, string>;
+  idempotencyKey: string;
+}) {
+  try {
+    await this.notificationsService.createNotification(input);
+  } catch (error) {
+    this.logger.error(
+      `Failed to create notification: ${input.idempotencyKey}`,
+      error instanceof Error ? error.stack : String(error),
+    );
+  }
+}
+ 
   async applyForLoan(createLoan: CreateLoanDto, userId: string) {
     /*
      * The borrower does not define the interest rate or fee
@@ -643,7 +670,21 @@ export class LoansService {
         },
       });
 
+      await this.notifyBorrower({
+          userId: updatedLoan.userId,
+          type: NotificationType.LOAN_REJECTED,
+          title: 'Loan application rejected',
+          message: `Your loan application was rejected. Reason: ${reason.trim()}`,
+          data: {
+            loanId: updatedLoan.id,
+            status: updatedLoan.status,
+          },
+          idempotencyKey: `loan-rejected:${updatedLoan.id}`,
+        });
+
       return updatedLoan;
+
+     
     });
   }
 
@@ -699,191 +740,155 @@ export class LoansService {
   // DISBURSE LOAN
   // ============================================================
 
-  async disburseLoan(loanId: string, actorId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      // ----------------------------------------------------------
-      // Locking is handled through the loan version/state check.
-      // ----------------------------------------------------------
-
-      const loan = await tx.loan.findFirst({
-        where: {
-          id: loanId,
-          deletedAt: null,
-        },
-
-        include: {
-          product: true,
-        },
-      });
-
-      if (!loan) {
-        throw new NotFoundException(
-          'The loan with this id is not available',
-        );
-      }
-
-      if (loan.status !== LoanStatus.APPROVED) {
-        throw new BadRequestException(
-          `Loan must be APPROVED before disbursement. Current status is ${loan.status}`,
-        );
-      }
-
-      // ----------------------------------------------------------
-      // Prevent duplicate schedule creation
-      // ----------------------------------------------------------
-
-      const existingSchedule =
-        await tx.repaymentSchedule.findFirst({
-          where: {
-            loanId,
-          },
-        });
-
-      if (existingSchedule) {
-        throw new ConflictException(
-          'A repayment schedule already exists for this loan',
-        );
-      }
-
-      // ----------------------------------------------------------
-      // Calculate repayment schedule
-      // ----------------------------------------------------------
-
-      const schedule = this.generateRepaymentSchedule({
-        loanId: loan.id,
-        principal: Number(loan.amount),
-        annualInterestRate: Number(loan.interestRate),
-        interestType: loan.interestType,
-        termValue: loan.termValue,
-        termUnit: loan.termUnit,
-        repaymentFrequency: loan.repaymentFrequency,
-        numberOfInstallments: loan.numberOfInstallments,
-        processingFeeType: loan.processingFeeType,
-        processingFeeAmount: Number(
-          loan.processingFeeAmount,
-        ),
-        processingFeeRate: Number(
-          loan.processingFeeRate,
-        ),
-        disbursementDate: new Date(),
-      });
-
-      if (schedule.rows.length === 0) {
-        throw new BadRequestException(
-          'Unable to generate repayment schedule',
-        );
-      }
-
-      // ----------------------------------------------------------
-      // Create repayment schedule
-      // ----------------------------------------------------------
-
-      await tx.repaymentSchedule.createMany({
-        data: schedule.rows,
-      });
-
-      // ----------------------------------------------------------
-      // Update loan
-      // ----------------------------------------------------------
-
-      const disbursedAt = new Date();
-
-      const updatedLoan = await tx.loan.update({
-        where: {
-          id: loan.id,
-        },
-
-        data: {
-          status: LoanStatus.DISBURSED,
-
-          disbursedAt,
-
-          disbursedById: actorId,
-
-          firstPaymentDueAt:
-            schedule.rows[0].dueDate,
-
-          maturityDate:
-            schedule.rows[schedule.rows.length - 1]
-              .dueDate,
-
-          totalInterest: schedule.totalInterest,
-
-          totalFees: schedule.totalFees,
-
-          totalPayable: schedule.totalPayable,
-
-          version: {
-            increment: 1,
-          },
-        },
-      });
-
-      // ----------------------------------------------------------
-      // Create disbursement transaction
-      // ----------------------------------------------------------
-
-      await tx.transaction.create({
-        data: {
-          loanId: loan.id,
-
-          type: TransactionType.DISBURSEMENT,
-
-          amount: loan.amount,
-
-          reference: `DISB-${loan.id}-${Date.now()}`,
-
-          principalAmount: loan.amount,
-
-          interestAmount: 0,
-
-          feeAmount: 0,
-
-          penaltyAmount: 0,
-
-          metadata: {
-            actorId,
-            disbursedAt:
-              disbursedAt.toISOString(),
-          },
-        },
-      });
-
-      // ----------------------------------------------------------
-      // Audit
-      // ----------------------------------------------------------
-
-      await tx.auditLog.create({
-        data: {
-          actorId,
-
-          action: 'DISBURSE_LOAN',
-
-          entityType: 'LOAN',
-
-          entityId: loan.id,
-
-          beforeState: {
-            status: loan.status,
-          },
-
-          afterState: {
-            status: LoanStatus.DISBURSED,
-            disbursedAt:
-              disbursedAt.toISOString(),
-            firstPaymentDueAt:
-              schedule.rows[0].dueDate.toISOString(),
-            maturityDate:
-              schedule.rows[
-                schedule.rows.length - 1
-              ].dueDate.toISOString(),
-          },
-        },
-      });
-
-      return updatedLoan;
+  
+async disburseLoan(loanId: string, actorId: string) {
+  // 1. Complete the disbursement in a database transaction.
+  const updatedLoan = await this.prisma.$transaction(async (tx) => {
+    const loan = await tx.loan.findFirst({
+      where: {
+        id: loanId,
+        deletedAt: null,
+      },
+      include: {
+        product: true,
+      },
     });
-  }
+
+    if (!loan) {
+      throw new NotFoundException(
+        'The loan with this id is not available',
+      );
+    }
+
+    if (loan.status !== LoanStatus.APPROVED) {
+      throw new BadRequestException(
+        `Loan must be APPROVED before disbursement. Current status is ${loan.status}`,
+      );
+    }
+
+    // 2. Prevent duplicate repayment schedule creation.
+    const existingSchedule = await tx.repaymentSchedule.findFirst({
+      where: {
+        loanId,
+      },
+    });
+
+    if (existingSchedule) {
+      throw new ConflictException(
+        'A repayment schedule already exists for this loan',
+      );
+    }
+
+    // 3. Generate the repayment schedule.
+    const disbursedAt = new Date();
+
+    const schedule = this.generateRepaymentSchedule({
+      loanId: loan.id,
+      principal: Number(loan.amount),
+      annualInterestRate: Number(loan.interestRate),
+      interestType: loan.interestType,
+      termValue: loan.termValue,
+      termUnit: loan.termUnit,
+      repaymentFrequency: loan.repaymentFrequency,
+      numberOfInstallments: loan.numberOfInstallments,
+      processingFeeType: loan.processingFeeType,
+      processingFeeAmount: Number(loan.processingFeeAmount),
+      processingFeeRate: Number(loan.processingFeeRate),
+      disbursementDate: disbursedAt,
+    });
+
+    if (schedule.rows.length === 0) {
+      throw new BadRequestException(
+        'Unable to generate repayment schedule',
+      );
+    }
+
+    // 4. Persist the repayment schedule.
+    await tx.repaymentSchedule.createMany({
+      data: schedule.rows,
+    });
+
+    // 5. Update the loan.
+    const loanAfterDisbursement = await tx.loan.update({
+      where: {
+        id: loan.id,
+      },
+      data: {
+        status: LoanStatus.DISBURSED,
+        disbursedAt,
+        disbursedById: actorId,
+        firstPaymentDueAt: schedule.rows[0].dueDate,
+        maturityDate: schedule.rows[schedule.rows.length - 1].dueDate,
+        totalInterest: schedule.totalInterest,
+        totalFees: schedule.totalFees,
+        totalPayable: schedule.totalPayable,
+        version: {
+          increment: 1,
+        },
+      },
+    });
+
+    // 6. Record the disbursement transaction.
+    await tx.transaction.create({
+      data: {
+        loanId: loan.id,
+        type: TransactionType.DISBURSEMENT,
+        amount: loan.amount,
+        reference: `DISB-${loan.id}-${Date.now()}`,
+        principalAmount: loan.amount,
+        interestAmount: 0,
+        feeAmount: 0,
+        penaltyAmount: 0,
+        metadata: {
+          actorId,
+          disbursedAt: disbursedAt.toISOString(),
+        },
+      },
+    });
+
+    // 7. Write the audit log.
+    await tx.auditLog.create({
+      data: {
+        actorId,
+        action: 'DISBURSE_LOAN',
+        entityType: 'LOAN',
+        entityId: loan.id,
+        beforeState: {
+          status: loan.status,
+        },
+        afterState: {
+          status: LoanStatus.DISBURSED,
+          disbursedAt: disbursedAt.toISOString(),
+          firstPaymentDueAt: schedule.rows[0].dueDate.toISOString(),
+          maturityDate: schedule.rows[
+            schedule.rows.length - 1
+          ].dueDate.toISOString(),
+        },
+      },
+    });
+
+    // Return the updated loan from the transaction callback.
+    return loanAfterDisbursement;
+  });
+
+  // 8. The transaction has committed successfully at this point.
+  // Create the in-app notification separately.
+  await this.notifyBorrower({
+    userId: updatedLoan.userId,
+    type: NotificationType.LOAN_DISBURSED,
+    title: 'Loan disbursed',
+    message:
+      'Your loan has been disbursed. Check your repayment schedule for your upcoming installments.',
+    data: {
+      loanId: updatedLoan.id,
+      status: updatedLoan.status,
+      disbursedAt: updatedLoan.disbursedAt?.toISOString() ?? '',
+    },
+    idempotencyKey: `loan-disbursed:${updatedLoan.id}`,
+  });
+
+  return updatedLoan;
+}
 
   // ============================================================
   // CLOSE LOAN
@@ -1664,7 +1669,21 @@ export class LoansService {
           },
         });
 
-        return updatedLoan;
+        if (nextStatus === LoanStatus.APPROVED) {
+            await this.notifyBorrower({
+            userId: updatedLoan.userId,
+            type: NotificationType.LOAN_APPROVED,
+            title: 'Loan approved',
+            message: 'Your loan application has been approved.',
+            data: {
+              loanId: updatedLoan.id,
+              status: updatedLoan.status,
+            },
+            idempotencyKey: `loan-approved:${updatedLoan.id}`,
+          });
+        }
+
+      return updatedLoan;
       },
     );
   }
